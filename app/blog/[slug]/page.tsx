@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { CmsShell } from "@/app/_components/cms-shell";
 import { prisma } from "@/lib/prisma";
 
@@ -73,8 +75,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             />
           </div>
         )}
-        <div className="whitespace-pre-wrap text-base leading-8 text-black/80 dark:text-white/80">
-          {post.content}
+        <div className="prose max-w-none dark:prose-invert prose-a:text-emerald-700 prose-a:underline-offset-4 hover:prose-a:underline dark:prose-a:text-emerald-400">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {post.content}
+          </ReactMarkdown>
         </div>
         <Link
           href="/blog"
