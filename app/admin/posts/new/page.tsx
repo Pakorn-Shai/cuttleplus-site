@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { CmsShell } from "@/app/_components/cms-shell";
-import MarkdownEditor from "@/app/_components/markdown-editor";
 import CoverImagePreview from "@/app/_components/cover-image-preview";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+
+const MarkdownEditor = dynamic(() => import("@/app/_components/markdown-editor"), {
+  ssr: false,
+});
 
 const POST_STATUSES = ["draft", "published"] as const;
 

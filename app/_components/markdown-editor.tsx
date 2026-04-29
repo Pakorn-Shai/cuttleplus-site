@@ -20,28 +20,14 @@ export default function MarkdownEditor({
   defaultValue = "",
   required = false,
 }: MarkdownEditorProps) {
-  const [value, setValue] = useState(defaultValue);
-  const isClient = typeof window !== "undefined";
-
-  // Render a textarea fallback during SSR
-  if (!isClient) {
-    return (
-      <textarea
-        name={name}
-        defaultValue={defaultValue}
-        required={required}
-        rows={12}
-        className="resize-y rounded-lg border border-black/15 bg-white px-4 py-3 text-sm leading-6 outline-none transition placeholder:text-black/40 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-white/20 dark:bg-white/5 dark:placeholder:text-white/40"
-      />
-    );
-  }
+  const [content, setContent] = useState(defaultValue);
 
   return (
     <div className="markdown-editor-wrapper" data-color-mode="light">
-      <input type="hidden" name={name} value={value} />
+      <input type="hidden" name={name} value={content} />
       <MDEditor
-        value={value}
-        onChange={(newValue) => setValue(newValue || "")}
+        value={content}
+        onChange={(newValue) => setContent(newValue || "")}
         height={400}
         preview="live"
         visibleDragbar={false}
@@ -57,10 +43,10 @@ export default function MarkdownEditor({
         }}
       />
       <div className="mt-3 text-xs text-black/60 dark:text-white/60">
-        <p>
+        <div>
           Supports <strong>Markdown</strong> formatting (headings, lists, links,
           code blocks, etc.). Use the toolbar above for common formatting.
-        </p>
+        </div>
       </div>
     </div>
   );

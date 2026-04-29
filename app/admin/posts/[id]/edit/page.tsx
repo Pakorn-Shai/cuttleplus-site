@@ -3,10 +3,12 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { CmsShell } from "@/app/_components/cms-shell";
-import MarkdownEditor from "@/app/_components/markdown-editor";
 import CoverImagePreview from "@/app/_components/cover-image-preview";
+import MarkdownEditorClient from "@/components/MarkdownEditorClient";
+import PostEditorSeoPanel from "@/components/PostEditorSeoPanel";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { checkSEO } from "@/lib/seoChecker";
 
 const POST_STATUSES = ["draft", "published"] as const;
 
@@ -73,6 +75,22 @@ async function updatePost(formData: FormData) {
   }
 
   redirect("/admin/dashboard");
+}
+
+async function checkPostSEO(input: {
+  title: string;
+  content: string;
+  category: string;
+}) {
+  "use server";
+
+  await requireAdmin();
+
+  return checkSEO({
+    title: input.title,
+    content: input.content,
+    category: input.category,
+  });
 }
 
 export default async function EditPostPage({ params }: EditPostPageProps) {
@@ -157,7 +175,8 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
 
         <div className="grid gap-2 text-sm">
           <span className="font-medium">Content</span>
-          <MarkdownEditor name="content" defaultValue={post.content} required />
+          <MarkdownEditorClient name="content" defaultValue={post.content} required />
+          <PostEditorSeoPanel checkSeoAction={checkPostSEO} />
         </div>
 
         <label className="grid gap-2 text-sm">
