@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { CmsShell } from "@/app/_components/cms-shell";
 import CoverImagePreview from "@/app/_components/cover-image-preview";
+import MarkdownEditorClient from "@/components/MarkdownEditorClient";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-const MarkdownEditor = dynamic(() => import("@/app/_components/markdown-editor"), {
-  ssr: false,
-});
 
 const POST_STATUSES = ["draft", "published"] as const;
 
@@ -56,6 +52,7 @@ async function createPost(formData: FormData) {
 
 export default async function NewPostPage() {
   await requireAdmin();
+  const content = "";
 
   return (
     <CmsShell
@@ -115,7 +112,7 @@ export default async function NewPostPage() {
 
         <div className="grid gap-2 text-sm">
           <span className="font-medium">Content</span>
-          <MarkdownEditor name="content" required />
+          <MarkdownEditorClient name="content" defaultValue={content} />
         </div>
 
         <label className="grid gap-2 text-sm">
