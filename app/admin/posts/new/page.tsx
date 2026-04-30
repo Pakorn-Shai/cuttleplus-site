@@ -4,8 +4,10 @@ import { CmsShell } from "@/app/_components/cms-shell";
 import CategorySelect from "@/app/_components/category-select";
 import CoverImagePreview from "@/app/_components/cover-image-preview";
 import MarkdownEditorClient from "@/components/MarkdownEditorClient";
+import PostEditorSeoPanel from "@/components/PostEditorSeoPanel";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { checkSEO } from "@/lib/seoChecker";
 
 const POST_STATUSES = ["draft", "published"] as const;
 
@@ -23,6 +25,24 @@ export const metadata: Metadata = {
   title: "New Post | Admin",
 };
 
+async function checkPostSEO(input: {
+  title: string;
+  content: string;
+  category: string;
+  coverImageUrl?: string | null;
+}) {
+  "use server";
+
+  await requireAdmin();
+
+  return checkSEO({
+    title: input.title,
+    content: input.content,
+    category: input.category,
+    coverImageUrl: input.coverImageUrl,
+  });
+}
+
 async function createPost(formData: FormData) {
   "use server";
 
@@ -39,6 +59,12 @@ async function createPost(formData: FormData) {
   const subcategoryId = formData.get("subcategoryId")
     ? Number(formData.get("subcategoryId"))
     : null;
+  const meta_title = formData.get("meta_title")
+    ? String(formData.get("meta_title")).trim() || null
+    : null;
+  const meta_description = formData.get("meta_description")
+    ? String(formData.get("meta_description")).trim() || null
+    : null;
 
   if (!title || !slug || !content) {
     throw new Error("Title, slug, and content are required.");
@@ -53,6 +79,8 @@ async function createPost(formData: FormData) {
       status,
       categoryId,
       subcategoryId,
+      meta_title,
+      meta_description,
     },
   });
 
@@ -101,6 +129,32 @@ export default async function NewPostPage() {
           </span>
         </label>
 
+        <label className="grid gap-2 text-sm">
+          <span className="font-medium">Meta Title (optional)</span>
+          <input
+            name="meta_title"
+            type="text"
+            placeholder="SEO title for search engines"
+            className="rounded-lg border border-border bg-surface px-4 py-3 text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+          />
+          <span className="text-xs text-muted">
+            Optional. If left empty, the post title will be used for SEO.
+          </span>
+        </label>
+
+        <label className="grid gap-2 text-sm">
+          <span className="font-medium">Meta Description (optional)</span>
+          <textarea
+            name="meta_description"
+            placeholder="Brief description for search engine results"
+            rows={3}
+            className="rounded-lg border border-border bg-surface px-4 py-3 text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20 resize-y"
+          />
+          <span className="text-xs text-muted">
+            Optional. Keep under 160 characters for optimal SEO.
+          </span>
+        </label>
+
         <div className="grid gap-5">
           <label className="grid gap-2 text-sm">
             <span className="font-medium">Cover Image URL (optional)</span>
@@ -124,6 +178,7 @@ export default async function NewPostPage() {
         <div className="grid gap-2 text-sm">
           <span className="font-medium">Content</span>
           <MarkdownEditorClient name="content" defaultValue={content} />
+          <PostEditorSeoPanel checkSeoAction={checkPostSEO} />
         </div>
 
         <label className="grid gap-2 text-sm">

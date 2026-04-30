@@ -51,6 +51,12 @@ async function updatePost(formData: FormData) {
   const subcategoryId = formData.get("subcategoryId")
     ? Number(formData.get("subcategoryId"))
     : null;
+  const meta_title = formData.get("meta_title")
+    ? String(formData.get("meta_title")).trim() || null
+    : null;
+  const meta_description = formData.get("meta_description")
+    ? String(formData.get("meta_description")).trim() || null
+    : null;
 
   if (!Number.isInteger(id)) {
     throw new Error("A valid post id is required.");
@@ -72,6 +78,8 @@ async function updatePost(formData: FormData) {
       status,
       categoryId,
       subcategoryId,
+      meta_title,
+      meta_description,
     },
   });
 
@@ -91,6 +99,7 @@ async function checkPostSEO(input: {
   title: string;
   content: string;
   category: string;
+  coverImageUrl?: string | null;
 }) {
   "use server";
 
@@ -100,6 +109,7 @@ async function checkPostSEO(input: {
     title: input.title,
     content: input.content,
     category: input.category,
+    coverImageUrl: input.coverImageUrl,
   });
 }
 
@@ -168,6 +178,34 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
           </span>
         </label>
 
+        <label className="grid gap-2 text-sm">
+          <span className="font-medium">Meta Title (optional)</span>
+          <input
+            name="meta_title"
+            type="text"
+            defaultValue={post.meta_title || ""}
+            placeholder="SEO title for search engines"
+            className="rounded-lg border border-border bg-surface px-4 py-3 text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+          />
+          <span className="text-xs text-muted">
+            Optional. If left empty, the post title will be used for SEO.
+          </span>
+        </label>
+
+        <label className="grid gap-2 text-sm">
+          <span className="font-medium">Meta Description (optional)</span>
+          <textarea
+            name="meta_description"
+            defaultValue={post.meta_description || ""}
+            placeholder="Brief description for search engine results"
+            rows={3}
+            className="rounded-lg border border-border bg-surface px-4 py-3 text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20 resize-y"
+          />
+          <span className="text-xs text-muted">
+            Optional. Keep under 160 characters for optimal SEO.
+          </span>
+        </label>
+
         <div className="grid gap-5">
           <label className="grid gap-2 text-sm">
             <span className="font-medium">Cover Image URL (optional)</span>
@@ -195,7 +233,7 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
         <div className="grid gap-2 text-sm">
           <span className="font-medium">Content</span>
           <MarkdownEditorClient name="content" defaultValue={post.content} required />
-          <PostEditorSeoPanel checkSeoAction={checkPostSEO} />
+          <PostEditorSeoPanel checkSeoAction={checkPostSEO} coverImageUrl={post.coverImage} />
         </div>
 
         <label className="grid gap-2 text-sm">

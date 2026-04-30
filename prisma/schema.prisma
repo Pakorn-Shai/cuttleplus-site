@@ -12,18 +12,20 @@ datasource db {
 }
 
 model Post {
-  id             Int       @id @default(autoincrement())
-  title          String
-  slug           String    @unique
-  content        String
-  coverImage     String?
-  status         String    @default("draft")
-  categoryId     Int?
-  subcategoryId  Int?
-  category       Category? @relation(fields: [categoryId], references: [id])
-  subcategory    Subcategory? @relation(fields: [subcategoryId], references: [id])
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id               Int       @id @default(autoincrement())
+  title            String
+  slug             String    @unique
+  content          String
+  coverImage       String?
+  meta_title       String?
+  meta_description String?
+  status           String    @default("draft")
+  categoryId       Int?
+  subcategoryId    Int?
+  category         Category? @relation(fields: [categoryId], references: [id])
+  subcategory      Subcategory? @relation(fields: [subcategoryId], references: [id])
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
 model Category {

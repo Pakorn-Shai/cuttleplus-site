@@ -10,6 +10,12 @@ type SeoResult = {
   suggestions: string[];
   optimized_title: string;
   optimized_content: string;
+  title_feedback: string;
+  image_feedback: string;
+  meta_title: string;
+  meta_description: string;
+  slug: string;
+  meta_feedback: string;
 };
 
 const categories = ["General", "Blog", "News", "Tutorial", "Product"];
@@ -18,6 +24,7 @@ export default function SeoCheckerUI() {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState(categories[0]);
   const [content, setContent] = useState("");
+  const [coverImageUrl, setCoverImageUrl] = useState("");
   const [result, setResult] = useState<SeoResult | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [error, setError] = useState("");
@@ -30,7 +37,7 @@ export default function SeoCheckerUI() {
     setError("");
 
     try {
-      const seoResult = await checkSEO({ title, category, content });
+      const seoResult = await checkSEO({ title, category, content, coverImageUrl: coverImageUrl || null });
       setResult(seoResult);
       setOptimizedView("preview");
     } catch (err) {
@@ -80,6 +87,17 @@ export default function SeoCheckerUI() {
       </div>
 
       <label className="block space-y-2">
+        <span className="text-sm font-medium">Cover Image URL (optional)</span>
+        <input
+          type="url"
+          value={coverImageUrl}
+          onChange={(event) => setCoverImageUrl(event.target.value)}
+          placeholder="https://example.com/image.jpg"
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+        />
+      </label>
+
+      <label className="block space-y-2">
         <span className="text-sm font-medium">Content</span>
         <textarea
           value={content}
@@ -103,6 +121,136 @@ export default function SeoCheckerUI() {
         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </p>
+      )}
+
+      {result && (
+        <div className="grid gap-4 rounded-xl border border-border bg-surface-muted p-4 md:grid-cols-3">
+          <div>
+            <p className="text-sm font-medium text-muted">
+              SEO score
+            </p>
+            <p className="mt-2 text-4xl font-bold text-primary">
+              {result.seo_score}
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-semibold">Issues</h4>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
+              {result.issues.length ? (
+                result.issues.map((issue) => <li key={issue}>{issue}</li>)
+              ) : (
+                <li>No issues found.</li>
+              )}
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold">Suggestions</h4>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
+              {result.suggestions.length ? (
+                result.suggestions.map((suggestion) => (
+                  <li key={suggestion}>{suggestion}</li>
+                ))
+              ) : (
+                <li>No suggestions available.</li>
+              )}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {result && (result.title_feedback || result.image_feedback || result.meta_feedback) && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {result.title_feedback && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <h4 className="font-semibold text-blue-900">Title (H1) Feedback</h4>
+              <p className="mt-2 text-sm text-blue-800">{result.title_feedback}</p>
+            </div>
+          )}
+
+          {result.image_feedback && (
+            <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
+              <h4 className="font-semibold text-purple-900">Cover Image Feedback</h4>
+              <p className="mt-2 text-sm text-purple-800">{result.image_feedback}</p>
+            </div>
+          )}
+
+          {result.meta_feedback && (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+              <h4 className="font-semibold text-green-900">Meta Feedback</h4>
+              <p className="mt-2 text-sm text-green-800">{result.meta_feedback}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {result && (
+        <div className="rounded-xl border border-border bg-surface p-4">
+          <h3 className="text-lg font-semibold">Meta SEO</h3>
+          <p className="mt-1 text-sm text-muted">
+            Review and copy the optimized meta tags for your content.
+          </p>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <label className="space-y-2">
+              <span className="text-sm font-medium">Slug</span>
+              <input
+                type="text"
+                value={result.slug}
+                readOnly
+                className="w-full rounded-lg border border-border bg-surface-muted px-3 py-2 text-sm text-muted outline-none"
+                placeholder="e.g. my-seo-optimized-post"
+              />
+            </label>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Title</span>
+              </div>
+              <div className="space-y-2">
+                <div className="relative">
+                  <textarea
+                    value={result.meta_title}
+                    readOnly
+                    rows={2}
+                    className="w-full resize-none rounded-lg border border-border bg-surface-muted px-3 py-2 pr-16 text-sm outline-none"
+                    placeholder="Optimized meta title"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => navigator.clipboard.writeText(result.meta_title)}
+                    className="absolute right-2 top-2 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:bg-primary-hover"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Description</span>
+            </div>
+            <div className="relative">
+              <textarea
+                value={result.meta_description}
+                readOnly
+                rows={3}
+                className="w-full resize-none rounded-lg border border-border bg-surface-muted px-3 py-2 pr-16 text-sm outline-none"
+                placeholder="Optimized meta description"
+              />
+              <button
+                type="button"
+                onClick={() => navigator.clipboard.writeText(result.meta_description)}
+                className="absolute right-2 top-2 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:bg-primary-hover"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -168,43 +316,6 @@ export default function SeoCheckerUI() {
           )}
         </div>
       </div>
-
-      {result && (
-        <div className="grid gap-4 rounded-xl border border-border bg-surface-muted p-4 md:grid-cols-3">
-          <div>
-            <p className="text-sm font-medium text-muted">
-              SEO score
-            </p>
-            <p className="mt-2 text-4xl font-bold text-primary">
-              {result.seo_score}
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-semibold">Issues</h4>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
-              {result.issues.length ? (
-                result.issues.map((issue) => <li key={issue}>{issue}</li>)
-              ) : (
-                <li>No issues found.</li>
-              )}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-semibold">Suggestions</h4>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
-              {result.suggestions.length ? (
-                result.suggestions.map((suggestion) => (
-                  <li key={suggestion}>{suggestion}</li>
-                ))
-              ) : (
-                <li>No suggestions available.</li>
-              )}
-            </ul>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

@@ -55,11 +55,22 @@ export async function generateMetadata({
     };
   }
 
-  const description = post.content.replace(/\s+/g, " ").trim().slice(0, 160);
+  const description = post.meta_description || post.content.replace(/\s+/g, " ").trim().slice(0, 150);
 
   return {
-    title: post.title,
+    title: post.meta_title || post.title,
     description,
+    openGraph: {
+      title: post.meta_title || post.title,
+      description,
+      images: post.coverImage ? [post.coverImage] : [],
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.meta_title || post.title,
+      description,
+    },
   };
 }
 

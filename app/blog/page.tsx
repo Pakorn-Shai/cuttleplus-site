@@ -4,9 +4,25 @@ import { CmsShell } from "@/app/_components/cms-shell";
 import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
-  title: "Blog",
-  description: "Read the latest posts from CuttlePlus.",
+  title: "บทความเทคโนโลยี | CuttlePlus",
+  description:
+    "รวมบทความเทคโนโลยี รีวิวเครื่องมือ และความรู้ที่ช่วยให้คุณเก่งขึ้น อัปเดตเนื้อหาใหม่อย่างสม่ำเสมอ",
+
+  openGraph: {
+    title: "บทความเทคโนโลยี | CuttlePlus",
+    description:
+      "รวมบทความเทคโนโลยี รีวิวเครื่องมือ และความรู้ที่ช่วยให้คุณเก่งขึ้น",
+    type: "website",
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "บทความเทคโนโลยี | CuttlePlus",
+    description:
+      "รวมบทความเทคโนโลยี รีวิวเครื่องมือ และความรู้ที่ช่วยให้คุณเก่งขึ้น",
+  },
 };
+
 
 function formatPostDate(date: Date) {
   return new Intl.DateTimeFormat("en", {
