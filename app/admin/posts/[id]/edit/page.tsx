@@ -67,6 +67,7 @@ async function updatePost(formData: FormData) {
   });
 
   revalidatePath("/admin/dashboard");
+  revalidatePath("/");
   revalidatePath("/blog");
   revalidatePath(`/blog/${slug}`);
 
