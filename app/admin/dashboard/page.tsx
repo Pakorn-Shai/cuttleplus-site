@@ -80,6 +80,9 @@ export default async function AdminDashboardPage() {
       description="Review, create, edit, and delete blog posts."
       links={[
         { href: "/blog", label: "Preview public blog" },
+        { href: "/admin/categories", label: "Manage categories" },
+        { href: "/admin/worksheets", label: "Manage worksheets" },
+        { href: "/admin/games", label: "Manage games" },
       ]}
     >
       <section className="space-y-5">

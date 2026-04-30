@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
+const POSTS_PER_CATEGORY = 6;
+
 function formatPostDate(date: Date) {
   return new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
@@ -18,14 +20,19 @@ function getExcerpt(content: string) {
 }
 
 export default async function Home() {
-  const posts = await prisma.post.findMany({
-    where: {
-      status: "published",
+  const categories = await prisma.category.findMany({
+    include: {
+      subcategories: true,
+      posts: {
+        where: { status: "published" },
+        orderBy: { createdAt: "desc" },
+        take: POSTS_PER_CATEGORY,
+        include: {
+          subcategory: true,
+        },
+      },
     },
-    orderBy: {
-      createdAt: "desc",
-    },
-    take: 3,
+    orderBy: { name: "asc" },
   });
 
   return (
@@ -55,74 +62,92 @@ export default async function Home() {
         <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background to-transparent" />
       </section>
 
-      {/* Recent Posts Section */}
+      {/* Categories Section */}
       <section className="bg-background pb-16">
-        <div className="mx-auto max-w-4xl px-6">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight">Recent Posts</h2>
-              <p className="mt-1 text-sm text-muted">
-                The latest published articles from CuttlePlus.
-              </p>
-            </div>
-            <Link
-              href="/blog"
-              className="inline-flex items-center text-sm font-medium text-primary transition hover:text-primary-hover"
-            >
-              View all
-              <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </div>
-
-          {posts.length ? (
-            <div className="space-y-4">
-              {posts.map((post) => (
-                <article
-                  key={post.id}
-                  className="group rounded-xl border border-border bg-surface/70 p-5 shadow-sm transition hover:border-primary/50 hover:shadow-md"
+        <div className="mx-auto max-w-5xl px-6">
+          {categories.map((category) => (
+            <section key={category.id} className="mb-16">
+              <div className="mb-8 flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight">{category.name}</h2>
+                  <p className="mt-1 text-sm text-muted">
+                    Latest articles in {category.name.toLowerCase()}.
+                  </p>
+                </div>
+                <Link
+                  href={`/blog/${category.slug}`}
+                  className="inline-flex items-center text-sm font-medium text-primary transition hover:text-primary-hover"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:gap-6">
-                    {post.coverImage && (
-                      <div className="mb-4 flex-shrink-0 overflow-hidden rounded-lg border border-border sm:mb-0 sm:w-32">
-                        <img
-                          src={post.coverImage}
-                          alt={post.title}
-                          className="h-24 w-full object-cover transition-transform group-hover:scale-105 sm:h-24"
-                        />
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <p className="text-xs font-medium uppercase tracking-[0.14em] text-primary">
-                        {formatPostDate(post.createdAt)}
-                      </p>
-                      <h3 className="mt-2 text-lg font-semibold tracking-tight">
-                        <Link href={`/blog/${post.slug}`} className="underline-offset-4 hover:underline group-hover:text-primary">
-                          {post.title}
-                        </Link>
-                      </h3>
-                      <p className="mt-2 text-sm leading-6 text-muted">
-                        {getExcerpt(post.content)}
-                      </p>
-                      <Link
-                        href={`/blog/${post.slug}`}
-                        className="mt-3 inline-flex text-sm font-medium text-primary underline-offset-4 hover:underline"
-                      >
-                        Read more →
-                      </Link>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
+                  View all
+                  <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
+
+              {category.posts.length ? (
+                <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {category.posts.map((post) => (
+                    <li key={post.id}>
+                      <article className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface/70 shadow-sm transition hover:border-primary/50 hover:shadow-md">
+                        {post.coverImage ? (
+                          <Link href={`/blog/${post.slug}`} className="block">
+                            <div className="overflow-hidden">
+                              <img
+                                src={post.coverImage}
+                                alt={`Cover image for ${post.title}`}
+                                className="h-40 w-full object-cover transition-transform duration-300 hover:scale-105"
+                              />
+                            </div>
+                          </Link>
+                        ) : (
+                          <div className="h-40 bg-surface-muted/50" />
+                        )}
+                        <div className="flex flex-1 flex-col p-4">
+                          {post.subcategory && (
+                            <Link
+                              href={`/blog/${category.slug}/${post.subcategory.slug}`}
+                              className="mb-2 inline-block w-fit rounded-full bg-primary/10 px-3 py-0.5 text-xs font-medium text-primary hover:bg-primary/20"
+                            >
+                              {post.subcategory.name}
+                            </Link>
+                          )}
+                          <h3 className="text-base font-semibold tracking-tight">
+                            <Link
+                              href={`/blog/${post.slug}`}
+                              className="underline-offset-4 hover:underline"
+                            >
+                              {post.title}
+                            </Link>
+                          </h3>
+                          <p className="mt-2 flex-1 text-sm leading-6 text-muted line-clamp-2">
+                            {getExcerpt(post.content)}
+                          </p>
+                          <p className="mt-3 text-xs font-medium uppercase tracking-[0.14em] text-primary">
+                            {formatPostDate(post.createdAt)}
+                          </p>
+                        </div>
+                      </article>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="rounded-xl border border-dashed border-border bg-surface/50 p-8 text-center">
+                  <p className="text-sm text-muted">
+                    No posts yet in this category. Check back soon!
+                  </p>
+                </div>
+              )}
+            </section>
+          ))}
+
+          {categories.length === 0 && (
             <div className="rounded-xl border border-dashed border-border bg-surface/50 p-8 text-center">
               <svg className="mx-auto mb-4 h-10 w-10 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
               </svg>
               <p className="text-sm text-muted">
-                No posts have been published yet. Check back soon!
+                No categories have been created yet. Check back soon!
               </p>
             </div>
           )}
@@ -131,7 +156,7 @@ export default async function Home() {
 
       {/* Footer */}
       <footer className="border-t border-border bg-surface py-8">
-        <div className="mx-auto max-w-4xl px-6 text-center text-sm text-muted">
+        <div className="mx-auto max-w-5xl px-6 text-center text-sm text-muted">
           <p>&copy; {new Date().getFullYear()} CuttlePlus. All rights reserved.</p>
         </div>
       </footer>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { CmsShell } from "@/app/_components/cms-shell";
+import CategorySelect from "@/app/_components/category-select";
 import CoverImagePreview from "@/app/_components/cover-image-preview";
 import MarkdownEditorClient from "@/components/MarkdownEditorClient";
 import PostEditorSeoPanel from "@/components/PostEditorSeoPanel";
@@ -44,6 +45,12 @@ async function updatePost(formData: FormData) {
   const content = String(formData.get("content") ?? "").trim();
   const coverImage = String(formData.get("coverImage") ?? "").trim() || null;
   const status = normalizePostStatus(formData.get("status"));
+  const categoryId = formData.get("categoryId")
+    ? Number(formData.get("categoryId"))
+    : null;
+  const subcategoryId = formData.get("subcategoryId")
+    ? Number(formData.get("subcategoryId"))
+    : null;
 
   if (!Number.isInteger(id)) {
     throw new Error("A valid post id is required.");
@@ -63,6 +70,8 @@ async function updatePost(formData: FormData) {
       content,
       coverImage,
       status,
+      categoryId,
+      subcategoryId,
     },
   });
 
@@ -107,6 +116,10 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
   const post = await prisma.post.findUnique({
     where: {
       id: postId,
+    },
+    include: {
+      category: true,
+      subcategory: true,
     },
   });
 
@@ -173,6 +186,11 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
             <CoverImagePreview imageUrl={post.coverImage} />
           </div>
         </div>
+
+        <CategorySelect
+          initialCategoryId={post.categoryId}
+          initialSubcategoryId={post.subcategoryId}
+        />
 
         <div className="grid gap-2 text-sm">
           <span className="font-medium">Content</span>

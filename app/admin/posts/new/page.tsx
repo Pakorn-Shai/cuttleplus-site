@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { CmsShell } from "@/app/_components/cms-shell";
+import CategorySelect from "@/app/_components/category-select";
 import CoverImagePreview from "@/app/_components/cover-image-preview";
 import MarkdownEditorClient from "@/components/MarkdownEditorClient";
 import { requireAdmin } from "@/lib/auth";
@@ -32,6 +33,12 @@ async function createPost(formData: FormData) {
   const content = String(formData.get("content") ?? "").trim();
   const coverImage = String(formData.get("coverImage") ?? "").trim() || null;
   const status = normalizePostStatus(formData.get("status"));
+  const categoryId = formData.get("categoryId")
+    ? Number(formData.get("categoryId"))
+    : null;
+  const subcategoryId = formData.get("subcategoryId")
+    ? Number(formData.get("subcategoryId"))
+    : null;
 
   if (!title || !slug || !content) {
     throw new Error("Title, slug, and content are required.");
@@ -44,6 +51,8 @@ async function createPost(formData: FormData) {
       content,
       coverImage,
       status,
+      categoryId,
+      subcategoryId,
     },
   });
 
@@ -109,6 +118,8 @@ export default async function NewPostPage() {
             <CoverImagePreview imageUrl="" />
           </div>
         </div>
+
+        <CategorySelect />
 
         <div className="grid gap-2 text-sm">
           <span className="font-medium">Content</span>
