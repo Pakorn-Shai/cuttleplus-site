@@ -2,21 +2,57 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  --background: #ffffff;
+  --primary: #047857;
+  --primary-hover: #065f46;
+  --primary-foreground: #ffffff;
+  --background: #f9fafb;
   --foreground: #171717;
+  --accent: #0d9488;
+  --accent-foreground: #ffffff;
+  --surface: #ffffff;
+  --surface-muted: #f3f4f6;
+  --border: rgb(0 0 0 / 0.1);
+  --muted: rgb(23 23 23 / 0.65);
+  --hero-from: #059669;
+  --hero-via: #10b981;
+  --hero-to: #14b8a6;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-hero-from: var(--hero-from);
+  --color-hero-via: var(--hero-via);
+  --color-hero-to: var(--hero-to);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --primary: #34d399;
+    --primary-hover: #6ee7b7;
+    --primary-foreground: #022c22;
+    --background: #030712;
     --foreground: #ededed;
+    --accent: #2dd4bf;
+    --accent-foreground: #042f2e;
+    --surface: #0b1220;
+    --surface-muted: #111827;
+    --border: rgb(255 255 255 / 0.15);
+    --muted: rgb(237 237 237 / 0.68);
+    --hero-from: #064e3b;
+    --hero-via: #065f46;
+    --hero-to: #134e4a;
   }
 }
 

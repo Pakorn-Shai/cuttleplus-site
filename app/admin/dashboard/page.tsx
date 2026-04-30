@@ -19,7 +19,7 @@ function formatPostDate(date: Date) {
 
 function getStatusBadgeClassName(status: string) {
   if (status === "published") {
-    return "bg-emerald-500/10 text-emerald-700 ring-emerald-600/20 dark:text-emerald-300";
+    return "bg-primary/10 text-primary ring-primary/20";
   }
 
   return "bg-amber-500/10 text-amber-700 ring-amber-600/20 dark:text-amber-300";
@@ -86,32 +86,32 @@ export default async function AdminDashboardPage() {
         <form action={logout} className="flex justify-end">
           <button
             type="submit"
-            className="rounded-md border border-black/15 px-3 py-2 text-sm font-semibold transition hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
+            className="rounded-md border border-border px-3 py-2 text-sm font-semibold transition hover:bg-surface-muted"
           >
             Logout
           </button>
         </form>
 
-        <div className="flex flex-col gap-4 rounded-xl border border-black/10 bg-white/70 p-5 shadow-sm dark:border-white/15 dark:bg-white/5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface/70 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-semibold tracking-tight">All posts</h2>
-            <p className="mt-1 text-sm text-black/60 dark:text-white/60">
+            <p className="mt-1 text-sm text-muted">
               {posts.length} {posts.length === 1 ? "post" : "posts"} in your blog.
             </p>
           </div>
           <Link
             href="/admin/posts/new"
-            className="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black"
+            className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
           >
             New Post
           </Link>
         </div>
 
         {posts.length ? (
-          <div className="overflow-hidden rounded-xl border border-black/10 bg-white/80 shadow-sm dark:border-white/15 dark:bg-white/5">
+          <div className="overflow-hidden rounded-xl border border-border bg-surface/80 shadow-sm">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-black/10 text-left text-sm dark:divide-white/15">
-                <thead className="bg-black/[0.03] text-xs font-semibold uppercase tracking-[0.14em] text-black/60 dark:bg-white/[0.04] dark:text-white/60">
+              <table className="min-w-full divide-y divide-border text-left text-sm">
+                <thead className="bg-surface-muted text-xs font-semibold uppercase tracking-[0.14em] text-muted">
                   <tr>
                     <th scope="col" className="px-5 py-4">
                       Title
@@ -130,16 +130,16 @@ export default async function AdminDashboardPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-black/10 dark:divide-white/15">
+                <tbody className="divide-y divide-border">
                   {posts.map((post) => (
-                    <tr key={post.id} className="transition hover:bg-emerald-500/[0.06]">
+                    <tr key={post.id} className="transition hover:bg-primary/[0.06]">
                       <td className="px-5 py-4 align-middle">
-                        <div className="font-semibold text-black dark:text-white">
+                        <div className="font-semibold text-foreground">
                           {post.title}
                         </div>
                       </td>
                       <td className="px-5 py-4 align-middle">
-                        <code className="rounded-md bg-black/[0.04] px-2 py-1 text-xs text-black/70 dark:bg-white/10 dark:text-white/75">
+                        <code className="rounded-md bg-surface-muted px-2 py-1 text-xs text-muted">
                           {post.slug}
                         </code>
                       </td>
@@ -150,14 +150,14 @@ export default async function AdminDashboardPage() {
                           {post.status}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-5 py-4 align-middle text-black/65 dark:text-white/65">
+                      <td className="whitespace-nowrap px-5 py-4 align-middle text-muted">
                         {formatPostDate(post.createdAt)}
                       </td>
                       <td className="px-5 py-4 align-middle">
                         <div className="flex flex-wrap items-center justify-end gap-2">
                           <Link
                             href={`/admin/posts/${post.id}/edit`}
-                            className="rounded-md border border-black/15 px-3 py-2 text-xs font-semibold transition hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
+                            className="rounded-md border border-border px-3 py-2 text-xs font-semibold transition hover:bg-surface-muted"
                           >
                             Edit
                           </Link>
@@ -179,14 +179,14 @@ export default async function AdminDashboardPage() {
             </div>
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-black/15 bg-white/60 p-8 text-center dark:border-white/20 dark:bg-white/5">
+          <div className="rounded-xl border border-dashed border-border bg-surface/60 p-8 text-center">
             <h2 className="text-lg font-semibold">No posts yet</h2>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-black/65 dark:text-white/65">
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">
               Create your first blog post to populate the public blog and start managing content here.
             </p>
             <Link
               href="/admin/posts/new"
-              className="mt-5 inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800"
+              className="mt-5 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary-hover"
             >
               New Post
             </Link>

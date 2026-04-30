@@ -72,7 +72,7 @@ export default async function NewPostPage() {
             type="text"
             required
             placeholder="Introducing CuttlePlus"
-            className="rounded-lg border border-black/15 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-black/40 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-white/20 dark:bg-white/5 dark:placeholder:text-white/40"
+            className="rounded-lg border border-border bg-surface px-4 py-3 text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
         </label>
 
@@ -85,9 +85,9 @@ export default async function NewPostPage() {
             placeholder="introducing-cuttleplus"
             pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
             title="Use lowercase letters, numbers, and hyphens only."
-            className="rounded-lg border border-black/15 bg-white px-4 py-3 font-mono text-sm outline-none transition placeholder:text-black/40 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-white/20 dark:bg-white/5 dark:placeholder:text-white/40"
+            className="rounded-lg border border-border bg-surface px-4 py-3 font-mono text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
-          <span className="text-xs text-black/60 dark:text-white/60">
+          <span className="text-xs text-muted">
             Use lowercase letters, numbers, and hyphens. This becomes the public URL.
           </span>
         </label>
@@ -99,13 +99,13 @@ export default async function NewPostPage() {
               name="coverImage"
               type="url"
               placeholder="https://example.com/image.jpg"
-              className="rounded-lg border border-black/15 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-black/40 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-white/20 dark:bg-white/5 dark:placeholder:text-white/40"
+              className="rounded-lg border border-border bg-surface px-4 py-3 text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
-            <span className="text-xs text-black/60 dark:text-white/60">
+            <span className="text-xs text-muted">
               Optional cover image that will appear at the top of the blog post.
             </span>
           </label>
-          <div className="rounded-xl border border-dashed border-black/15 p-4 dark:border-white/20">
+          <div className="rounded-xl border border-dashed border-border p-4">
             <CoverImagePreview imageUrl="" />
           </div>
         </div>
@@ -120,24 +120,24 @@ export default async function NewPostPage() {
           <select
             name="status"
             defaultValue="draft"
-            className="rounded-lg border border-black/15 bg-white px-4 py-3 text-sm outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-white/20 dark:bg-white/5"
+            className="rounded-lg border border-border bg-surface px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
           >
             <option value="draft">Draft</option>
             <option value="published">Published</option>
           </select>
-          <span className="text-xs text-black/60 dark:text-white/60">
+          <span className="text-xs text-muted">
             Draft posts are saved in admin only and hidden from public blog pages.
           </span>
         </label>
 
-        <div className="flex flex-wrap items-center gap-3 border-t border-black/10 pt-5 dark:border-white/15">
+        <div className="flex flex-wrap items-center gap-3 border-t border-border pt-5">
           <button
             type="submit"
-            className="rounded-lg bg-emerald-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black"
+            className="rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
           >
             Save post
           </button>
-          <p className="text-xs text-black/60 dark:text-white/60">
+          <p className="text-xs text-muted">
             Published posts will appear on the public blog. Drafts stay hidden.
           </p>
         </div>

@@ -61,11 +61,11 @@ export default function CoverImagePreview({ imageUrl }: CoverImagePreviewProps) 
 
   if (!imageUrl) {
     return (
-      <div className="rounded-lg border border-dashed border-black/20 bg-black/5 p-8 text-center dark:border-white/20 dark:bg-white/5">
-        <p className="text-sm text-black/60 dark:text-white/60">
+      <div className="rounded-lg border border-dashed border-border bg-surface-muted p-8 text-center">
+        <p className="text-sm text-muted">
           No cover image set
         </p>
-        <p className="mt-1 text-xs text-black/40 dark:text-white/40">
+        <p className="mt-1 text-xs text-muted">
           Add a URL above to preview
         </p>
       </div>
@@ -74,9 +74,9 @@ export default function CoverImagePreview({ imageUrl }: CoverImagePreviewProps) 
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-black/15 bg-white/60 p-8 text-center dark:border-white/20 dark:bg-white/5">
-        <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
-        <p className="mt-3 text-xs text-black/60 dark:text-white/60">
+      <div className="rounded-lg border border-border bg-surface/60 p-8 text-center">
+        <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <p className="mt-3 text-xs text-muted">
           Checking image...
         </p>
       </div>
@@ -98,7 +98,7 @@ export default function CoverImagePreview({ imageUrl }: CoverImagePreviewProps) 
 
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden rounded-lg border border-black/15 bg-white/60 dark:border-white/20 dark:bg-white/5">
+      <div className="overflow-hidden rounded-lg border border-border bg-surface/60">
         <img
           src={imageUrl}
           alt="Cover preview"
@@ -108,8 +108,8 @@ export default function CoverImagePreview({ imageUrl }: CoverImagePreviewProps) 
         />
       </div>
       <div className="flex items-center gap-2 text-xs">
-        <div className="h-2 w-2 rounded-full bg-emerald-500" />
-        <span className="text-black/60 dark:text-white/60">
+        <div className="h-2 w-2 rounded-full bg-primary" />
+        <span className="text-muted">
           Image loaded successfully
         </span>
       </div>

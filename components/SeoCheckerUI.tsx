@@ -42,10 +42,10 @@ export default function SeoCheckerUI() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl space-y-6 rounded-2xl border border-black/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-gray-950">
+    <section className="mx-auto w-full max-w-6xl space-y-6 rounded-2xl border border-border bg-surface p-6 shadow-sm">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">SEO Checker</h2>
-        <p className="mt-1 text-sm text-black/60 dark:text-white/60">
+        <p className="mt-1 text-sm text-muted">
           Enter your content details, then generate SEO recommendations and an
           optimized version.
         </p>
@@ -59,7 +59,7 @@ export default function SeoCheckerUI() {
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="Enter a title"
-            className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-white/5"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
         </label>
 
@@ -68,7 +68,7 @@ export default function SeoCheckerUI() {
           <select
             value={category}
             onChange={(event) => setCategory(event.target.value)}
-            className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-white/5"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
           >
             {categories.map((item) => (
               <option key={item} value={item}>
@@ -86,7 +86,7 @@ export default function SeoCheckerUI() {
           onChange={(event) => setContent(event.target.value)}
           placeholder="Paste or write your content here"
           rows={6}
-          className="w-full resize-y rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-white/5"
+          className="w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
       </label>
 
@@ -94,7 +94,7 @@ export default function SeoCheckerUI() {
         type="button"
         onClick={handleCheckSEO}
         disabled={isChecking || !content.trim()}
-        className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isChecking ? "Checking..." : "Check SEO"}
       </button>
@@ -112,21 +112,21 @@ export default function SeoCheckerUI() {
             value={content}
             readOnly
             rows={14}
-            className="w-full resize-none rounded-lg border border-black/10 bg-gray-50 px-3 py-2 text-sm outline-none dark:border-white/10 dark:bg-white/5"
+            className="w-full resize-none rounded-lg border border-border bg-surface-muted px-3 py-2 text-sm outline-none"
           />
         </div>
 
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="font-semibold">SEO optimized content</h3>
-            <div className="inline-flex rounded-lg border border-black/10 bg-gray-50 p-1 text-xs font-medium dark:border-white/10 dark:bg-white/5">
+            <div className="inline-flex rounded-lg border border-border bg-surface-muted p-1 text-xs font-medium">
               <button
                 type="button"
                 onClick={() => setOptimizedView("preview")}
                 className={`rounded-md px-3 py-1.5 transition ${
                   optimizedView === "preview"
-                    ? "bg-white text-emerald-700 shadow-sm dark:bg-white/10 dark:text-emerald-300"
-                    : "text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white"
+                    ? "bg-surface text-primary shadow-sm"
+                    : "text-muted hover:text-foreground"
                 }`}
               >
                 Preview
@@ -136,8 +136,8 @@ export default function SeoCheckerUI() {
                 onClick={() => setOptimizedView("raw")}
                 className={`rounded-md px-3 py-1.5 transition ${
                   optimizedView === "raw"
-                    ? "bg-white text-emerald-700 shadow-sm dark:bg-white/10 dark:text-emerald-300"
-                    : "text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white"
+                    ? "bg-surface text-primary shadow-sm"
+                    : "text-muted hover:text-foreground"
                 }`}
               >
                 Raw
@@ -146,13 +146,13 @@ export default function SeoCheckerUI() {
           </div>
 
           {optimizedView === "preview" ? (
-            <div className="min-h-[348px] rounded-lg border border-black/10 bg-gray-50 px-4 py-3 text-sm outline-none dark:border-white/10 dark:bg-white/5">
+            <div className="min-h-[348px] rounded-lg border border-border bg-surface-muted px-4 py-3 text-sm outline-none">
               {result?.optimized_content ? (
                 <div className="prose max-w-none dark:prose-invert">
                   <ReactMarkdown>{result.optimized_content}</ReactMarkdown>
                 </div>
               ) : (
-                <p className="text-black/50 dark:text-white/50">
+                <p className="text-muted">
                   Optimized content will appear here after checking SEO.
                 </p>
               )}
@@ -163,26 +163,26 @@ export default function SeoCheckerUI() {
               readOnly
               rows={14}
               placeholder="Optimized content will appear here after checking SEO."
-              className="w-full resize-none rounded-lg border border-black/10 bg-gray-50 px-3 py-2 text-sm outline-none dark:border-white/10 dark:bg-white/5"
+              className="w-full resize-none rounded-lg border border-border bg-surface-muted px-3 py-2 text-sm outline-none"
             />
           )}
         </div>
       </div>
 
       {result && (
-        <div className="grid gap-4 rounded-xl border border-black/10 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/5 md:grid-cols-3">
+        <div className="grid gap-4 rounded-xl border border-border bg-surface-muted p-4 md:grid-cols-3">
           <div>
-            <p className="text-sm font-medium text-black/60 dark:text-white/60">
+            <p className="text-sm font-medium text-muted">
               SEO score
             </p>
-            <p className="mt-2 text-4xl font-bold text-emerald-600 dark:text-emerald-400">
+            <p className="mt-2 text-4xl font-bold text-primary">
               {result.seo_score}
             </p>
           </div>
 
           <div>
             <h4 className="font-semibold">Issues</h4>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-black/70 dark:text-white/70">
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
               {result.issues.length ? (
                 result.issues.map((issue) => <li key={issue}>{issue}</li>)
               ) : (
@@ -193,7 +193,7 @@ export default function SeoCheckerUI() {
 
           <div>
             <h4 className="font-semibold">Suggestions</h4>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-black/70 dark:text-white/70">
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
               {result.suggestions.length ? (
                 result.suggestions.map((suggestion) => (
                   <li key={suggestion}>{suggestion}</li>

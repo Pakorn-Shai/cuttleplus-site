@@ -61,12 +61,12 @@ export default function PostEditorSeoPanel({
   return (
     <section
       ref={panelRef}
-      className="grid gap-4 rounded-xl border border-black/10 bg-black/[0.02] p-4 dark:border-white/10 dark:bg-white/[0.03]"
+      className="grid gap-4 rounded-xl border border-border bg-surface-muted/50 p-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">SEO Check</h3>
-          <p className="mt-1 text-xs text-black/60 dark:text-white/60">
+          <p className="mt-1 text-xs text-muted">
             Compare the current draft with AI-generated SEO recommendations. The
             original editor content will stay unchanged.
           </p>
@@ -75,7 +75,7 @@ export default function PostEditorSeoPanel({
           type="button"
           onClick={handleCheckSEO}
           disabled={isChecking}
-          className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:focus:ring-offset-black"
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isChecking ? "Checking..." : "Check SEO"}
         </button>
@@ -88,12 +88,12 @@ export default function PostEditorSeoPanel({
       )}
 
       {result && (
-        <div className="grid gap-4 rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-white/5">
+        <div className="grid gap-4 rounded-lg border border-border bg-surface p-4">
           <div>
-            <p className="text-sm font-medium text-black/60 dark:text-white/60">
+            <p className="text-sm font-medium text-muted">
               SEO Score
             </p>
-            <p className="mt-1 text-3xl font-bold text-emerald-700 dark:text-emerald-400">
+            <p className="mt-1 text-3xl font-bold text-primary">
               {result.seo_score}
             </p>
           </div>
@@ -101,7 +101,7 @@ export default function PostEditorSeoPanel({
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <h4 className="font-semibold">Issues</h4>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-black/70 dark:text-white/70">
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
                 {result.issues.length ? (
                   result.issues.map((issue) => <li key={issue}>{issue}</li>)
                 ) : (
@@ -112,7 +112,7 @@ export default function PostEditorSeoPanel({
 
             <div>
               <h4 className="font-semibold">Suggestions</h4>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-black/70 dark:text-white/70">
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
                 {result.suggestions.length ? (
                   result.suggestions.map((suggestion) => (
                     <li key={suggestion}>{suggestion}</li>
@@ -130,7 +130,7 @@ export default function PostEditorSeoPanel({
               value={result.optimized_content}
               readOnly
               rows={12}
-              className="w-full resize-y rounded-lg border border-black/15 bg-gray-50 px-4 py-3 text-sm outline-none dark:border-white/20 dark:bg-black/20"
+              className="w-full resize-y rounded-lg border border-border bg-surface-muted px-4 py-3 text-sm outline-none"
             />
           </label>
         </div>

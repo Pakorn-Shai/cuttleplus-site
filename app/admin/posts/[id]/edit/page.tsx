@@ -135,7 +135,7 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
             type="text"
             required
             defaultValue={post.title}
-            className="rounded-lg border border-black/15 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-black/40 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-white/20 dark:bg-white/5 dark:placeholder:text-white/40"
+            className="rounded-lg border border-border bg-surface px-4 py-3 text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
         </label>
 
@@ -148,9 +148,9 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
             defaultValue={post.slug}
             pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
             title="Use lowercase letters, numbers, and hyphens only."
-            className="rounded-lg border border-black/15 bg-white px-4 py-3 font-mono text-sm outline-none transition placeholder:text-black/40 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-white/20 dark:bg-white/5 dark:placeholder:text-white/40"
+            className="rounded-lg border border-border bg-surface px-4 py-3 font-mono text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
-          <span className="text-xs text-black/60 dark:text-white/60">
+          <span className="text-xs text-muted">
             Use lowercase letters, numbers, and hyphens. This becomes the public URL.
           </span>
         </label>
@@ -163,13 +163,13 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
               type="url"
               defaultValue={post.coverImage || ""}
               placeholder="https://example.com/image.jpg"
-              className="rounded-lg border border-black/15 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-black/40 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-white/20 dark:bg-white/5 dark:placeholder:text-white/40"
+              className="rounded-lg border border-border bg-surface px-4 py-3 text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
-            <span className="text-xs text-black/60 dark:text-white/60">
+            <span className="text-xs text-muted">
               Optional cover image that will appear at the top of the blog post.
             </span>
           </label>
-          <div className="rounded-xl border border-dashed border-black/15 p-4 dark:border-white/20">
+          <div className="rounded-xl border border-dashed border-border p-4">
             <CoverImagePreview imageUrl={post.coverImage} />
           </div>
         </div>
@@ -185,26 +185,26 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
           <select
             name="status"
             defaultValue={post.status}
-            className="rounded-lg border border-black/15 bg-white px-4 py-3 text-sm outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-white/20 dark:bg-white/5"
+            className="rounded-lg border border-border bg-surface px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
           >
             <option value="draft">Draft</option>
             <option value="published">Published</option>
           </select>
-          <span className="text-xs text-black/60 dark:text-white/60">
+          <span className="text-xs text-muted">
             Draft posts remain editable here but are hidden from public blog pages.
           </span>
         </label>
 
-        <div className="flex flex-wrap items-center gap-3 border-t border-black/10 pt-5 dark:border-white/15">
+        <div className="flex flex-wrap items-center gap-3 border-t border-border pt-5">
           <button
             type="submit"
-            className="rounded-lg bg-emerald-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black"
+            className="rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
           >
             Save changes
           </button>
           <Link
             href="/admin/dashboard"
-            className="rounded-lg border border-black/15 px-5 py-3 text-sm font-semibold transition hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
+            className="rounded-lg border border-border px-5 py-3 text-sm font-semibold transition hover:bg-surface-muted"
           >
             Cancel
           </Link>

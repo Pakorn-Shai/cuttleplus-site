@@ -42,49 +42,45 @@ export default async function BlogIndexPage() {
       links={[{ href: "/", label: "Back to home" }]}
     >
       {posts.length ? (
-        <ul className="space-y-4">
+        <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {posts.map((post) => (
-            <li
-              key={post.id}
-              className="rounded-xl border border-black/10 bg-white/60 p-5 transition hover:border-emerald-500/50 hover:shadow-sm dark:border-white/15 dark:bg-white/5"
-            >
-              <article>
-                <p className="text-xs font-medium uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-400">
-                  {formatPostDate(post.createdAt)}
-                </p>
-                <h2 className="mt-2 text-xl font-semibold tracking-tight">
-                  <Link
-                    href={`/blog/${post.slug}`}
-                    className="underline-offset-4 hover:underline"
-                  >
-                    {post.title}
+            <li key={post.id}>
+              <article className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface/60 transition hover:border-primary/50 hover:shadow-sm">
+                {post.coverImage ? (
+                  <Link href={`/blog/${post.slug}`} className="block">
+                    <div className="overflow-hidden">
+                      <img
+                        src={post.coverImage}
+                        alt={`Cover image for ${post.title}`}
+                        className="h-48 w-full object-cover transition-transform duration-300 hover:scale-105"
+                      />
+                    </div>
                   </Link>
-                </h2>
-                {post.coverImage && (
-                  <div className="mt-3 overflow-hidden rounded-lg border border-black/10 bg-white/60 dark:border-white/15 dark:bg-white/5">
-                    <img
-                      src={post.coverImage}
-                      alt={`Cover image for ${post.title}`}
-                      className="h-auto w-full object-cover"
-                      style={{ maxHeight: "200px" }}
-                    />
-                  </div>
+                ) : (
+                  <div className="h-48 bg-surface/80" />
                 )}
-                <p className="mt-3 text-sm leading-6 text-black/70 dark:text-white/70">
-                  {getExcerpt(post.content)}
-                </p>
-                <Link
-                  href={`/blog/${post.slug}`}
-                  className="mt-4 inline-flex text-sm font-medium text-emerald-700 underline-offset-4 hover:underline dark:text-emerald-400"
-                >
-                  Read post →
-                </Link>
+                <div className="flex flex-1 flex-col p-5">
+                  <h2 className="text-lg font-semibold tracking-tight">
+                    <Link
+                      href={`/blog/${post.slug}`}
+                      className="underline-offset-4 hover:underline"
+                    >
+                      {post.title}
+                    </Link>
+                  </h2>
+                  <p className="mt-2 flex-1 text-sm leading-6 text-muted">
+                    {getExcerpt(post.content)}
+                  </p>
+                  <p className="mt-4 text-xs font-medium uppercase tracking-[0.14em] text-primary">
+                    {formatPostDate(post.createdAt)}
+                  </p>
+                </div>
               </article>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="rounded-xl border border-black/10 bg-white/60 p-5 text-sm text-black/70 dark:border-white/15 dark:bg-white/5 dark:text-white/70">
+        <p className="rounded-xl border border-border bg-surface/60 p-5 text-sm text-muted">
           No posts have been published yet. Check back soon.
         </p>
       )}

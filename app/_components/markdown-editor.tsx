@@ -37,12 +37,12 @@ export default function MarkdownEditor({
         }}
         style={{
           borderRadius: "0.5rem",
-          border: "1px solid rgba(0, 0, 0, 0.15)",
-          backgroundColor: "white",
+          border: "1px solid var(--border)",
+          backgroundColor: "var(--surface)",
           overflow: "hidden",
         }}
       />
-      <div className="mt-3 text-xs text-black/60 dark:text-white/60">
+      <div className="mt-3 text-xs text-muted">
         <div>
           Supports <strong>Markdown</strong> formatting (headings, lists, links,
           code blocks, etc.). Use the toolbar above for common formatting.

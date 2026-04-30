@@ -68,7 +68,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     >
       <article className="space-y-6">
         {post.coverImage && (
-          <div className="overflow-hidden rounded-xl border border-black/10 bg-white/60 dark:border-white/15 dark:bg-white/5">
+          <div className="overflow-hidden rounded-xl border border-border bg-surface/60">
             <img
               src={post.coverImage}
               alt={`Cover image for ${post.title}`}
@@ -77,14 +77,14 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             />
           </div>
         )}
-        <div className="prose max-w-none dark:prose-invert prose-a:text-emerald-700 prose-a:underline-offset-4 hover:prose-a:underline dark:prose-a:text-emerald-400">
+        <div className="prose max-w-none dark:prose-invert prose-a:text-primary prose-a:underline-offset-4 hover:prose-a:underline">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {post.content}
           </ReactMarkdown>
         </div>
         <Link
           href="/blog"
-          className="inline-flex text-sm font-medium text-emerald-700 underline-offset-4 hover:underline dark:text-emerald-400"
+          className="inline-flex text-sm font-medium text-primary underline-offset-4 hover:underline"
         >
           ← Return to blog listing
         </Link>
