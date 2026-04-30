@@ -44,7 +44,7 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
     >
       <form action={signIn} className="grid gap-4" aria-label="Admin login form">
         {error ? (
-          <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300">
+          <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700">
             Invalid username or password.
           </p>
         ) : null}

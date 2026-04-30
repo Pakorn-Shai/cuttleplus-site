@@ -85,11 +85,11 @@ export default function CoverImagePreview({ imageUrl }: CoverImagePreviewProps) 
 
   if (!isValid) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/30 dark:bg-red-900/10">
-        <p className="text-sm font-medium text-red-800 dark:text-red-300">
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+        <p className="text-sm font-medium text-red-800">
           Invalid image URL
         </p>
-        <p className="mt-1 text-xs text-red-700/70 dark:text-red-400/70">
+        <p className="mt-1 text-xs text-red-700/70">
           The URL &#34;{imageUrl}&#34; does not appear to be a valid image.
         </p>
       </div>

@@ -100,7 +100,7 @@ export default function SeoCheckerUI() {
       </button>
 
       {error && (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </p>
       )}
@@ -148,7 +148,7 @@ export default function SeoCheckerUI() {
           {optimizedView === "preview" ? (
             <div className="min-h-[348px] rounded-lg border border-border bg-surface-muted px-4 py-3 text-sm outline-none">
               {result?.optimized_content ? (
-                <div className="prose max-w-none dark:prose-invert">
+                <div className="prose max-w-none">
                   <ReactMarkdown>{result.optimized_content}</ReactMarkdown>
                 </div>
               ) : (

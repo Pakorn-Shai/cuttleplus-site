@@ -77,7 +77,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             />
           </div>
         )}
-        <div className="prose max-w-none dark:prose-invert prose-a:text-primary prose-a:underline-offset-4 hover:prose-a:underline">
+        <div className="prose max-w-none prose-a:text-primary prose-a:underline-offset-4 hover:prose-a:underline">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {post.content}
           </ReactMarkdown>

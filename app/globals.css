@@ -37,24 +37,6 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --primary: #34d399;
-    --primary-hover: #6ee7b7;
-    --primary-foreground: #022c22;
-    --background: #030712;
-    --foreground: #ededed;
-    --accent: #2dd4bf;
-    --accent-foreground: #042f2e;
-    --surface: #0b1220;
-    --surface-muted: #111827;
-    --border: rgb(255 255 255 / 0.15);
-    --muted: rgb(237 237 237 / 0.68);
-    --hero-from: #064e3b;
-    --hero-via: #065f46;
-    --hero-to: #134e4a;
-  }
-}
 
 body {
   background: var(--background);
