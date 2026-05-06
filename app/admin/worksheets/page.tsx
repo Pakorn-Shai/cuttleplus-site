@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { CmsShell } from "@/app/_components/cms-shell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { DeleteWorksheetButton } from "./delete-worksheet-button";
 
 export const metadata: Metadata = {
   title: "Worksheets | Admin",
@@ -81,17 +82,9 @@ export default async function WorksheetsPage() {
                   </Link>
                   <form action={deleteWorksheet}>
                     <input type="hidden" name="id" value={worksheet.id} />
-                    <button
-                      type="submit"
+                    <DeleteWorksheetButton
                       className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
-                      onClick={(e) => {
-                        if (!confirm("Delete this worksheet?")) {
-                          e.preventDefault();
-                        }
-                      }}
-                    >
-                      Delete
-                    </button>
+                    />
                   </form>
                 </div>
               </div>
