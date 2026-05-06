@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { CmsShell } from "@/app/_components/cms-shell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isHttpUrl } from "@/lib/urls";
 
 export const metadata: Metadata = {
   title: "Edit Worksheet | Admin",
@@ -34,12 +35,17 @@ async function updateWorksheet(formData: FormData) {
     throw new Error("Title, image URL, and link are required.");
   }
 
+  if (!isHttpUrl(imageUrl) || !isHttpUrl(link)) {
+    throw new Error("Image URL and link must be valid http(s) URLs.");
+  }
+
   await prisma.worksheet.update({
     where: { id },
     data: { title, imageUrl, link },
   });
 
   revalidatePath("/admin/worksheets");
+  revalidatePath("/worksheets");
   redirect("/admin/worksheets");
 }
 

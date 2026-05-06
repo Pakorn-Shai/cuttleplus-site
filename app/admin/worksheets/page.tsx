@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { CmsShell } from "@/app/_components/cms-shell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -25,6 +24,7 @@ async function deleteWorksheet(formData: FormData) {
   });
 
   revalidatePath("/admin/worksheets");
+  revalidatePath("/worksheets");
 }
 
 export default async function WorksheetsPage() {
