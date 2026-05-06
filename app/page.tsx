@@ -2,8 +2,10 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { isHttpUrl } from "@/lib/urls";
 
 const POSTS_PER_CATEGORY = 6;
+const WORKSHEETS_LIMIT = 6;
 
 function formatPostDate(date: Date) {
   return new Intl.DateTimeFormat("en", {
@@ -20,20 +22,26 @@ function getExcerpt(content: string) {
 }
 
 export default async function Home() {
-  const categories = await prisma.category.findMany({
-    include: {
-      subcategories: true,
-      posts: {
-        where: { status: "published" },
-        orderBy: { createdAt: "desc" },
-        take: POSTS_PER_CATEGORY,
-        include: {
-          subcategory: true,
+  const [categories, worksheets] = await Promise.all([
+    prisma.category.findMany({
+      include: {
+        subcategories: true,
+        posts: {
+          where: { status: "published" },
+          orderBy: { createdAt: "desc" },
+          take: POSTS_PER_CATEGORY,
+          include: {
+            subcategory: true,
+          },
         },
       },
-    },
-    orderBy: { name: "asc" },
-  });
+      orderBy: { name: "asc" },
+    }),
+    prisma.worksheet.findMany({
+      orderBy: { createdAt: "desc" },
+      take: WORKSHEETS_LIMIT,
+    }),
+  ]);
 
   return (
     <main className="min-h-screen">
@@ -151,6 +159,108 @@ export default async function Home() {
               </p>
             </div>
           )}
+
+          <section className="mt-16">
+            <div className="mb-8 flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight">Worksheets</h2>
+                <p className="mt-1 text-sm text-muted">
+                  Latest worksheets and learning resources.
+                </p>
+              </div>
+              <Link
+                href="/worksheets"
+                className="inline-flex items-center whitespace-nowrap text-sm font-medium text-primary transition hover:text-primary-hover"
+              >
+                View all
+                <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+
+            {worksheets.length ? (
+              <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {worksheets.map((worksheet) => {
+                  const hasValidLink = isHttpUrl(worksheet.link);
+                  const hasValidImageUrl = isHttpUrl(worksheet.imageUrl);
+                  const image = (
+                    <div className="overflow-hidden">
+                      {hasValidImageUrl ? (
+                        <img
+                          src={worksheet.imageUrl}
+                          alt={worksheet.title}
+                          className="h-44 w-full object-cover transition-transform duration-300 hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-44 w-full items-center justify-center bg-surface-muted px-4 text-center text-sm text-muted">
+                          Image URL is invalid.
+                        </div>
+                      )}
+                    </div>
+                  );
+
+                  return (
+                    <li key={worksheet.id}>
+                      <article className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface/70 shadow-sm transition hover:border-primary/50 hover:shadow-md">
+                        {hasValidLink ? (
+                          <a
+                            href={worksheet.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block"
+                          >
+                            {image}
+                          </a>
+                        ) : (
+                          image
+                        )}
+                        <div className="flex flex-1 flex-col p-4">
+                          <h3 className="text-base font-semibold tracking-tight">
+                            {hasValidLink ? (
+                              <a
+                                href={worksheet.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="underline-offset-4 hover:underline"
+                              >
+                                {worksheet.title}
+                              </a>
+                            ) : (
+                              worksheet.title
+                            )}
+                          </h3>
+                          <p className="mt-2 text-sm text-primary">
+                            {hasValidLink ? (
+                              <a
+                                href={worksheet.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 font-medium hover:underline"
+                              >
+                                Open worksheet
+                                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-8L10 10" />
+                                </svg>
+                              </a>
+                            ) : (
+                              <span className="text-muted">Worksheet link is invalid.</span>
+                            )}
+                          </p>
+                        </div>
+                      </article>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <div className="rounded-xl border border-dashed border-border bg-surface/50 p-8 text-center">
+                <p className="text-sm text-muted">
+                  No worksheets have been added yet. Check back soon!
+                </p>
+              </div>
+            )}
+          </section>
         </div>
       </section>
 
