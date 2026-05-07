@@ -1,5 +1,7 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
+import { assertCategorySlugNotPost } from "@/lib/blog-validation";
 import { prisma } from "@/lib/prisma";
 
 export async function PUT(
@@ -29,6 +31,13 @@ export async function PUT(
   }
 
   try {
+    await assertCategorySlugNotPost(slug.trim());
+
+    const existingCategory = await prisma.category.findUnique({
+      where: { id: categoryId },
+      select: { slug: true },
+    });
+
     const category = await prisma.category.update({
       where: { id: categoryId },
       data: {
@@ -39,6 +48,14 @@ export async function PUT(
         subcategories: true,
       },
     });
+
+    revalidatePath("/");
+    revalidatePath("/sitemap.xml");
+    revalidatePath(`/blog/${category.slug}`);
+
+    if (existingCategory && existingCategory.slug !== category.slug) {
+      revalidatePath(`/blog/${existingCategory.slug}`);
+    }
 
     return NextResponse.json(category);
   } catch (error: unknown) {
@@ -55,6 +72,12 @@ export async function PUT(
           { status: 404 }
         );
       }
+    }
+    if (error instanceof Error && error.message === "Slug already used by a blog post.") {
+      return NextResponse.json(
+        { error: "Slug already used by a blog post" },
+        { status: 409 }
+      );
     }
     throw error;
   }
@@ -80,6 +103,10 @@ export async function DELETE(
     await prisma.category.delete({
       where: { id: categoryId },
     });
+
+    revalidatePath("/");
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/blog");
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

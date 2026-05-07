@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -55,6 +56,10 @@ export async function POST(request: Request) {
         category: true,
       },
     });
+
+    revalidatePath("/");
+    revalidatePath("/sitemap.xml");
+    revalidatePath(`/blog/${subcategory.category.slug}`);
 
     return NextResponse.json(subcategory, { status: 201 });
   } catch (error: unknown) {

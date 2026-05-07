@@ -1,5 +1,7 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
+import { assertCategorySlugNotPost } from "@/lib/blog-validation";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -36,6 +38,8 @@ export async function POST(request: Request) {
   }
 
   try {
+    await assertCategorySlugNotPost(slug.trim());
+
     const category = await prisma.category.create({
       data: {
         name: name.trim(),
@@ -46,11 +50,21 @@ export async function POST(request: Request) {
       },
     });
 
+    revalidatePath("/");
+    revalidatePath("/sitemap.xml");
+    revalidatePath(`/blog/${category.slug}`);
+
     return NextResponse.json(category, { status: 201 });
   } catch (error: unknown) {
     if (error && typeof error === "object" && "code" in error && error.code === "P2002") {
       return NextResponse.json(
         { error: "A category with this name or slug already exists" },
+        { status: 409 }
+      );
+    }
+    if (error instanceof Error && error.message === "Slug already used by a blog post.") {
+      return NextResponse.json(
+        { error: "Slug already used by a blog post" },
         { status: 409 }
       );
     }

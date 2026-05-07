@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -37,6 +38,13 @@ export async function PUT(
   }
 
   try {
+    const existingSubcategory = await prisma.subcategory.findUnique({
+      where: { id: subcategoryId },
+      include: {
+        category: true,
+      },
+    });
+
     const subcategory = await prisma.subcategory.update({
       where: { id: subcategoryId },
       data: {
@@ -48,6 +56,16 @@ export async function PUT(
         category: true,
       },
     });
+
+    revalidatePath("/");
+    revalidatePath("/sitemap.xml");
+    revalidatePath(`/blog/${subcategory.category.slug}`);
+    revalidatePath(`/blog/${subcategory.category.slug}/${subcategory.slug}`);
+
+    if (existingSubcategory) {
+      revalidatePath(`/blog/${existingSubcategory.category.slug}`);
+      revalidatePath(`/blog/${existingSubcategory.category.slug}/${existingSubcategory.slug}`);
+    }
 
     return NextResponse.json(subcategory);
   } catch (error: unknown) {
@@ -95,6 +113,10 @@ export async function DELETE(
     await prisma.subcategory.delete({
       where: { id: subcategoryId },
     });
+
+    revalidatePath("/");
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/blog");
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

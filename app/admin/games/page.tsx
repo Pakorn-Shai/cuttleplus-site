@@ -24,6 +24,9 @@ async function deleteGame(formData: FormData) {
   });
 
   revalidatePath("/admin/games");
+  revalidatePath("/game");
+  revalidatePath("/");
+  revalidatePath("/sitemap.xml");
 }
 
 export default async function GamesPage() {

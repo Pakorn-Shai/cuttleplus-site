@@ -32,6 +32,10 @@ export default async function WorksheetsPage() {
   await requireAdmin();
 
   const worksheets = await prisma.worksheet.findMany({
+    include: {
+      category: true,
+      subcategory: true,
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -65,6 +69,10 @@ export default async function WorksheetsPage() {
               />
               <div className="p-4">
                 <h3 className="text-sm font-semibold">{worksheet.title}</h3>
+                <p className="mt-1 text-xs text-muted">
+                  {worksheet.category ? worksheet.category.name : "Uncategorized"}
+                  {worksheet.subcategory ? ` / ${worksheet.subcategory.name}` : ""}
+                </p>
                 <a
                   href={worksheet.link}
                   target="_blank"

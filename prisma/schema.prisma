@@ -48,12 +48,39 @@ model Subcategory {
 }
 
 model Worksheet {
-  id        Int      @id @default(autoincrement())
-  title     String
-  imageUrl  String
-  link      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            Int                   @id @default(autoincrement())
+  title         String
+  imageUrl      String
+  link          String
+  categoryId    Int?
+  subcategoryId Int?
+  category      WorksheetCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  subcategory   WorksheetSubcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+}
+
+model WorksheetCategory {
+  id            Int                    @id @default(autoincrement())
+  name          String                 @unique
+  slug          String                 @unique
+  worksheets    Worksheet[]
+  subcategories WorksheetSubcategory[]
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+}
+
+model WorksheetSubcategory {
+  id         Int               @id @default(autoincrement())
+  name       String
+  slug       String
+  categoryId Int
+  category   WorksheetCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  worksheets Worksheet[]
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@unique([categoryId, slug])
 }
 
 model Game {

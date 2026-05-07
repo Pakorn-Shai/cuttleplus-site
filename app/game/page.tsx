@@ -1,7 +1,8 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { CmsShell } from "@/app/_components/cms-shell";
 import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Games | CuttlePlus",

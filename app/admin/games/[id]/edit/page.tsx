@@ -40,6 +40,9 @@ async function updateGame(formData: FormData) {
   });
 
   revalidatePath("/admin/games");
+  revalidatePath("/game");
+  revalidatePath("/");
+  revalidatePath("/sitemap.xml");
   redirect("/admin/games");
 }
 

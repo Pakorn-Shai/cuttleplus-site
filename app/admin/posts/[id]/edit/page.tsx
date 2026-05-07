@@ -8,6 +8,7 @@ import CoverImagePreview from "@/app/_components/cover-image-preview";
 import MarkdownEditorClient from "@/components/MarkdownEditorClient";
 import PostEditorSeoPanel from "@/components/PostEditorSeoPanel";
 import { requireAdmin } from "@/lib/auth";
+import { assertPostSlugNotCategory, validatePostTaxonomy } from "@/lib/blog-validation";
 import { prisma } from "@/lib/prisma";
 import { checkSEO } from "@/lib/seoChecker";
 
@@ -66,6 +67,9 @@ async function updatePost(formData: FormData) {
     throw new Error("Title, slug, and content are required.");
   }
 
+  await assertPostSlugNotCategory(slug);
+  await validatePostTaxonomy(categoryId, subcategoryId);
+
   await prisma.post.update({
     where: {
       id,
@@ -86,6 +90,7 @@ async function updatePost(formData: FormData) {
   revalidatePath("/admin/dashboard");
   revalidatePath("/");
   revalidatePath("/blog");
+  revalidatePath("/sitemap.xml");
   revalidatePath(`/blog/${slug}`);
 
   if (previousSlug && previousSlug !== slug) {

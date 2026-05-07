@@ -51,6 +51,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     orderBy: { updatedAt: "desc" },
   });
 
+  const worksheetCategories = await prisma.worksheetCategory.findMany({
+    include: {
+      subcategories: true,
+    },
+  });
+
   const games = await prisma.game.findMany({
     orderBy: { updatedAt: "desc" },
   });
@@ -61,6 +67,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: "weekly" as const,
     priority: 0.7,
   }] : [];
+
+  const worksheetCategoryUrls: MetadataRoute.Sitemap = worksheetCategories.map((category) => ({
+    url: `${baseUrl}/worksheets/${category.slug}`,
+    lastModified: formatDate(category.updatedAt),
+    changeFrequency: "weekly" as const,
+    priority: 0.6,
+  }));
+
+  const worksheetSubcategoryUrls: MetadataRoute.Sitemap = worksheetCategories.flatMap(
+    (category) =>
+      category.subcategories.map((subcategory) => ({
+        url: `${baseUrl}/worksheets/${category.slug}/${subcategory.slug}`,
+        lastModified: formatDate(subcategory.updatedAt),
+        changeFrequency: "weekly" as const,
+        priority: 0.5,
+      }))
+  );
 
   const gameUrl: MetadataRoute.Sitemap = games.length > 0 ? [{
     url: `${baseUrl}/game`,
@@ -86,6 +109,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...subcategoryUrls,
     ...postUrls,
     ...worksheetUrl,
+    ...worksheetCategoryUrls,
+    ...worksheetSubcategoryUrls,
     ...gameUrl,
   ];
 }

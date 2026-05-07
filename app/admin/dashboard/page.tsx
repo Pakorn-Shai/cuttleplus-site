@@ -46,7 +46,9 @@ async function deletePost(formData: FormData) {
   });
 
   revalidatePath("/admin/dashboard");
+  revalidatePath("/");
   revalidatePath("/blog");
+  revalidatePath("/sitemap.xml");
   revalidatePath(`/blog/${deletedPost.slug}`);
 }
 
@@ -82,6 +84,7 @@ export default async function AdminDashboardPage() {
         { href: "/blog", label: "Preview public blog" },
         { href: "/admin/categories", label: "Manage categories" },
         { href: "/admin/worksheets", label: "Manage worksheets" },
+        { href: "/admin/worksheet-categories", label: "Manage worksheet categories" },
         { href: "/admin/games", label: "Manage games" },
       ]}
     >

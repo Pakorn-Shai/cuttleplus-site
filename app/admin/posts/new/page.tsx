@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { CmsShell } from "@/app/_components/cms-shell";
 import CategorySelect from "@/app/_components/category-select";
@@ -6,6 +7,7 @@ import CoverImagePreview from "@/app/_components/cover-image-preview";
 import MarkdownEditorClient from "@/components/MarkdownEditorClient";
 import PostEditorSeoPanel from "@/components/PostEditorSeoPanel";
 import { requireAdmin } from "@/lib/auth";
+import { assertPostSlugNotCategory, validatePostTaxonomy } from "@/lib/blog-validation";
 import { prisma } from "@/lib/prisma";
 import { checkSEO } from "@/lib/seoChecker";
 
@@ -70,6 +72,9 @@ async function createPost(formData: FormData) {
     throw new Error("Title, slug, and content are required.");
   }
 
+  await assertPostSlugNotCategory(slug);
+  await validatePostTaxonomy(categoryId, subcategoryId);
+
   const post = await prisma.post.create({
     data: {
       title,
@@ -83,6 +88,15 @@ async function createPost(formData: FormData) {
       meta_description,
     },
   });
+
+  revalidatePath("/admin/dashboard");
+
+  if (status === "published") {
+    revalidatePath("/");
+    revalidatePath("/blog");
+    revalidatePath("/sitemap.xml");
+    revalidatePath(`/blog/${post.slug}`);
+  }
 
   redirect(status === "published" ? `/blog/${post.slug}` : "/admin/dashboard");
 }

@@ -59,10 +59,14 @@ export function NavbarClient() {
             </Link>
 
             {/* Blog Dropdown with Categories */}
-            <div className="relative">
+            <div
+              className="relative"
+              onMouseEnter={() => setHoveredCategory(-1)}
+              onMouseLeave={() => setHoveredCategory(null)}
+            >
               <button
+                type="button"
                 className="group relative text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
-                onMouseEnter={() => setHoveredCategory(-1)}
               >
                 Blog
                 <span className="absolute -bottom-1 left-0 h-px w-0 bg-primary transition-all duration-300 group-hover:w-full" />
@@ -70,49 +74,49 @@ export function NavbarClient() {
 
               {/* Dropdown Menu */}
               <div
-                className={`absolute left-0 top-full mt-2 w-64 rounded-lg border border-border bg-surface p-2 shadow-lg transition-all duration-200 ${
-                  hoveredCategory !== null ? "opacity-100 visible" : "opacity-0 invisible"
+                className={`absolute left-0 top-full w-64 pt-2 transition-all duration-200 ${
+                  hoveredCategory !== null
+                    ? "visible opacity-100"
+                    : "invisible pointer-events-none opacity-0"
                 }`}
-                onMouseEnter={() => {
-                  // Keep dropdown open when hovering over it
-                }}
-                onMouseLeave={() => setHoveredCategory(null)}
               >
-                <Link
-                  href="/blog"
-                  className="block rounded-md px-4 py-2 text-sm font-semibold text-foreground/80 transition hover:bg-surface-muted hover:text-primary"
-                  onMouseEnter={() => setHoveredCategory(-1)}
-                >
-                  All Posts
-                </Link>
-                {categories.length > 0 && (
-                  <div className="border-t border-border pt-2">
-                    {categories.map((category) => (
-                      <div key={category.id}>
-                        <Link
-                          href={`/blog/${category.slug}`}
-                          className="block rounded-md px-4 py-2 text-sm font-medium text-foreground/80 transition hover:bg-surface-muted hover:text-primary"
-                          onMouseEnter={() => setHoveredCategory(category.id)}
-                        >
-                          {category.name}
-                        </Link>
-                        {category.subcategories.length > 0 && (
-                          <div className="ml-4">
-                            {category.subcategories.map((sub) => (
-                              <Link
-                                key={sub.id}
-                                href={`/blog/${category.slug}/${sub.slug}`}
-                                className="block rounded-md px-4 py-1.5 text-xs text-foreground/60 transition hover:text-primary"
-                              >
-                                {sub.name}
-                              </Link>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="rounded-lg border border-border bg-surface p-2 shadow-lg">
+                  <Link
+                    href="/blog"
+                    className="block rounded-md px-4 py-2 text-sm font-semibold text-foreground/80 transition hover:bg-surface-muted hover:text-primary"
+                    onMouseEnter={() => setHoveredCategory(-1)}
+                  >
+                    All Posts
+                  </Link>
+                  {categories.length > 0 && (
+                    <div className="border-t border-border pt-2">
+                      {categories.map((category) => (
+                        <div key={category.id}>
+                          <Link
+                            href={`/blog/${category.slug}`}
+                            className="block rounded-md px-4 py-2 text-sm font-medium text-foreground/80 transition hover:bg-surface-muted hover:text-primary"
+                            onMouseEnter={() => setHoveredCategory(category.id)}
+                          >
+                            {category.name}
+                          </Link>
+                          {category.subcategories.length > 0 && (
+                            <div className="ml-4">
+                              {category.subcategories.map((sub) => (
+                                <Link
+                                  key={sub.id}
+                                  href={`/blog/${category.slug}/${sub.slug}`}
+                                  className="block rounded-md px-4 py-1.5 text-xs text-foreground/60 transition hover:text-primary"
+                                >
+                                  {sub.name}
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

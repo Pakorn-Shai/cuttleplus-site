@@ -139,14 +139,14 @@ export default async function BlogPage({ params }: BlogPageProps) {
           <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {posts.map((post) => (
               <li key={post.id}>
-                <article className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface/60 transition hover:border-primary/50 hover:shadow-sm">
+                <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface/60 shadow-sm transition-all duration-300 md:hover:-translate-y-1 md:hover:border-primary/40 md:hover:shadow-xl md:hover:shadow-primary/10">
                   {post.coverImage ? (
                     <Link href={`/blog/${post.slug}`} className="block">
                       <div className="overflow-hidden">
                         <img
                           src={post.coverImage}
                           alt={`Cover image for ${post.title}`}
-                          className="h-48 w-full object-cover transition-transform duration-300 hover:scale-105"
+                          className="h-48 w-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       </div>
                     </Link>

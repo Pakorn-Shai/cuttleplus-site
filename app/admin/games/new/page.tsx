@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { CmsShell } from "@/app/_components/cms-shell";
 import { requireAdmin } from "@/lib/auth";
@@ -24,6 +25,11 @@ async function createGame(formData: FormData) {
   await prisma.game.create({
     data: { title, thumbnail, url },
   });
+
+  revalidatePath("/admin/games");
+  revalidatePath("/game");
+  revalidatePath("/");
+  revalidatePath("/sitemap.xml");
 
   redirect("/admin/games");
 }
