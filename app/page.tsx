@@ -7,6 +7,10 @@ import { isHttpUrl } from "@/lib/urls";
 
 const POSTS_PER_CATEGORY = 6;
 const WORKSHEETS_LIMIT = 6;
+const SHELF_LIST_CLASS =
+  "-mx-6 flex snap-x snap-mandatory gap-5 overflow-x-auto px-6 pb-4 [scrollbar-width:thin] sm:gap-6";
+const SHELF_ITEM_CLASS =
+  "flex w-[84vw] flex-none snap-start sm:w-[42vw] lg:w-[320px]";
 
 export default async function Home() {
   const [categories, worksheets] = await Promise.all([
@@ -43,7 +47,7 @@ export default async function Home() {
         <div className="absolute -left-24 bottom-4 h-52 w-52 rounded-full bg-emerald-300/20 blur-3xl sm:h-72 sm:w-72" />
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(3,63,55,0.18),rgba(3,63,55,0.02)_45%,rgba(3,63,55,0.28))]" />
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2288%22%20height%3D%2288%22%20viewBox%3D%220%200%2088%2088%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23ffffff%22%20stroke-opacity%3D%220.12%22%3E%3Cpath%20d%3D%22M0%2044h88M44%200v88%22/%3E%3Ccircle%20cx%3D%2244%22%20cy%3D%2244%22%20r%3D%221.5%22%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.16%22%20stroke%3D%22none%22/%3E%3C/g%3E%3C/svg%3E')] opacity-25 [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_72%,transparent)]" />
-        <div className="mx-auto max-w-4xl px-6 py-16 sm:py-24 md:py-32 lg:py-36">
+        <div className="mx-auto max-w-4xl px-6 py-14 sm:py-20 md:py-24 lg:py-28">
           <div className="relative z-10 text-center">
             <div className="mx-auto mb-6 h-px w-28 bg-gradient-to-r from-transparent via-white/60 to-transparent" />
             <h1 className="text-4xl font-bold tracking-tight text-white drop-shadow-sm sm:text-5xl md:text-6xl">
@@ -67,11 +71,11 @@ export default async function Home() {
       </section>
 
       {/* Categories Section */}
-      <section className="bg-background pb-16">
+      <section className="bg-background pb-12 sm:pb-14">
         <div className="mx-auto max-w-5xl px-6">
           {categories.map((category) => (
-            <section key={category.id} className="mb-16">
-              <div className="mb-8 flex items-center justify-between">
+            <section key={category.id} className="mb-12 sm:mb-14">
+              <div className="mb-5 flex items-end justify-between gap-4 sm:mb-6">
                 <div>
                   <h2 className="text-2xl font-bold tracking-tight">{category.name}</h2>
                   <p className="mt-1 text-sm text-muted">
@@ -90,9 +94,9 @@ export default async function Home() {
               </div>
 
               {category.posts.length ? (
-                <ul className="grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-7">
+                <ul className={SHELF_LIST_CLASS}>
                   {category.posts.map((post) => (
-                    <li key={post.id} className="flex">
+                    <li key={post.id} className={SHELF_ITEM_CLASS}>
                       <ArticleCard post={post} category={category} />
                     </li>
                   ))}
@@ -118,8 +122,8 @@ export default async function Home() {
             </div>
           )}
 
-          <section className="mt-16">
-            <div className="mb-8 flex items-center justify-between gap-4">
+          <section className="mt-12 sm:mt-14">
+            <div className="mb-5 flex items-end justify-between gap-4 sm:mb-6">
               <div>
                 <h2 className="text-2xl font-bold tracking-tight">Worksheets</h2>
                 <p className="mt-1 text-sm text-muted">
@@ -138,7 +142,7 @@ export default async function Home() {
             </div>
 
             {worksheets.length ? (
-              <ul className="grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-7">
+              <ul className={SHELF_LIST_CLASS}>
                 {worksheets.map((worksheet) => {
                   const hasValidLink = isHttpUrl(worksheet.link);
                   const hasValidImageUrl = isHttpUrl(worksheet.imageUrl);
@@ -159,7 +163,7 @@ export default async function Home() {
                   );
 
                   return (
-                    <li key={worksheet.id} className="flex">
+                    <li key={worksheet.id} className={SHELF_ITEM_CLASS}>
                       <article className="group flex h-full w-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-all duration-300 md:hover:-translate-y-1 md:hover:border-primary/40 md:hover:shadow-xl md:hover:shadow-primary/10">
                         {hasValidLink ? (
                           <a
