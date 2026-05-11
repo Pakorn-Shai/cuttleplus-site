@@ -86,6 +86,7 @@ export default async function AdminDashboardPage() {
         { href: "/admin/worksheets", label: "Manage worksheets" },
         { href: "/admin/worksheet-categories", label: "Manage worksheet categories" },
         { href: "/admin/games", label: "Manage games" },
+        { href: "/admin/menu", label: "Menu Management" },
       ]}
     >
       <section className="space-y-5">

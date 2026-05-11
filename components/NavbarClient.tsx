@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Logo } from "./Logo";
 
-const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/blog", label: "Blog" },
-  { href: "/worksheets", label: "Worksheets" },
-  { href: "/game", label: "Games" },
-];
+type MenuItem = {
+  id: string;
+  label: string;
+  href: string;
+  order: number;
+};
 
 type Subcategory = {
   id: number;
@@ -25,7 +25,15 @@ type Category = {
   subcategories: Subcategory[];
 };
 
-export function NavbarClient() {
+type NavbarClientProps = {
+  menuItems: MenuItem[];
+};
+
+function isExternalHref(href: string) {
+  return href.startsWith("http://") || href.startsWith("https://");
+}
+
+export function NavbarClient({ menuItems }: NavbarClientProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileCategoryOpen, setMobileCategoryOpen] = useState<number | null>(null);
@@ -41,7 +49,7 @@ export function NavbarClient() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md shadow-sm">
+    <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 shadow-sm backdrop-blur-md">
       <div className="mx-auto max-w-5xl px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
@@ -49,88 +57,91 @@ export function NavbarClient() {
 
           {/* Desktop Navigation */}
           <nav className="hidden items-center gap-8 sm:flex">
-            {/* Home */}
-            <Link
-              href="/"
-              className="group relative text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
-            >
-              Home
-              <span className="absolute -bottom-1 left-0 h-px w-0 bg-primary transition-all duration-300 group-hover:w-full" />
-            </Link>
-
-            {/* Blog Dropdown with Categories */}
-            <div
-              className="relative"
-              onMouseEnter={() => setHoveredCategory(-1)}
-              onMouseLeave={() => setHoveredCategory(null)}
-            >
-              <button
-                type="button"
-                className="group relative text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
-              >
-                Blog
-                <span className="absolute -bottom-1 left-0 h-px w-0 bg-primary transition-all duration-300 group-hover:w-full" />
-              </button>
-
-              {/* Dropdown Menu */}
-              <div
-                className={`absolute left-0 top-full w-64 pt-2 transition-all duration-200 ${
-                  hoveredCategory !== null
-                    ? "visible opacity-100"
-                    : "invisible pointer-events-none opacity-0"
-                }`}
-              >
-                <div className="rounded-lg border border-border bg-surface p-2 shadow-lg">
-                  <Link
-                    href="/blog"
-                    className="block rounded-md px-4 py-2 text-sm font-semibold text-foreground/80 transition hover:bg-surface-muted hover:text-primary"
-                    onMouseEnter={() => setHoveredCategory(-1)}
+            {menuItems.map((link) =>
+              link.href === "/blog" ? (
+                <div
+                  key={link.id}
+                  className="relative"
+                  onMouseEnter={() => setHoveredCategory(-1)}
+                  onMouseLeave={() => setHoveredCategory(null)}
+                >
+                  <button
+                    type="button"
+                    className="group relative text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
                   >
-                    All Posts
-                  </Link>
-                  {categories.length > 0 && (
-                    <div className="border-t border-border pt-2">
-                      {categories.map((category) => (
-                        <div key={category.id}>
-                          <Link
-                            href={`/blog/${category.slug}`}
-                            className="block rounded-md px-4 py-2 text-sm font-medium text-foreground/80 transition hover:bg-surface-muted hover:text-primary"
-                            onMouseEnter={() => setHoveredCategory(category.id)}
-                          >
-                            {category.name}
-                          </Link>
-                          {category.subcategories.length > 0 && (
-                            <div className="ml-4">
-                              {category.subcategories.map((sub) => (
-                                <Link
-                                  key={sub.id}
-                                  href={`/blog/${category.slug}/${sub.slug}`}
-                                  className="block rounded-md px-4 py-1.5 text-xs text-foreground/60 transition hover:text-primary"
-                                >
-                                  {sub.name}
-                                </Link>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+                    {link.label}
+                    <span className="absolute -bottom-1 left-0 h-px w-0 bg-primary transition-all duration-300 group-hover:w-full" />
+                  </button>
 
-            {/* Other nav links */}
-            {navLinks.filter(link => link.href !== "/" && link.href !== "/blog").map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="group relative text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
-              >
-                {link.label}
-                <span className="absolute -bottom-1 left-0 h-px w-0 bg-primary transition-all duration-300 group-hover:w-full" />
-              </Link>
-            ))}
+                  {/* Dropdown Menu */}
+                  <div
+                    className={`absolute left-0 top-full w-64 pt-2 transition-all duration-200 ${
+                      hoveredCategory !== null
+                        ? "visible opacity-100"
+                        : "invisible pointer-events-none opacity-0"
+                    }`}
+                  >
+                    <div className="rounded-lg border border-border bg-surface p-2 shadow-lg">
+                      <Link
+                        href="/blog"
+                        className="block rounded-md px-4 py-2 text-sm font-semibold text-foreground/80 transition hover:bg-surface-muted hover:text-primary"
+                        onMouseEnter={() => setHoveredCategory(-1)}
+                      >
+                        All Posts
+                      </Link>
+                      {categories.length > 0 && (
+                        <div className="border-t border-border pt-2">
+                          {categories.map((category) => (
+                            <div key={category.id}>
+                              <Link
+                                href={`/blog/${category.slug}`}
+                                className="block rounded-md px-4 py-2 text-sm font-medium text-foreground/80 transition hover:bg-surface-muted hover:text-primary"
+                                onMouseEnter={() => setHoveredCategory(category.id)}
+                              >
+                                {category.name}
+                              </Link>
+                              {category.subcategories.length > 0 && (
+                                <div className="ml-4">
+                                  {category.subcategories.map((sub) => (
+                                    <Link
+                                      key={sub.id}
+                                      href={`/blog/${category.slug}/${sub.slug}`}
+                                      className="block rounded-md px-4 py-1.5 text-xs text-foreground/60 transition hover:text-primary"
+                                    >
+                                      {sub.name}
+                                    </Link>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : isExternalHref(link.href) ? (
+                <a
+                  key={link.id}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
+                >
+                  {link.label}
+                  <span className="absolute -bottom-1 left-0 h-px w-0 bg-primary transition-all duration-300 group-hover:w-full" />
+                </a>
+              ) : (
+                <Link
+                  key={link.id}
+                  href={link.href}
+                  className="group relative text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
+                >
+                  {link.label}
+                  <span className="absolute -bottom-1 left-0 h-px w-0 bg-primary transition-all duration-300 group-hover:w-full" />
+                </Link>
+              )
+            )}
           </nav>
 
           {/* Mobile Menu Button */}
@@ -156,83 +167,86 @@ export function NavbarClient() {
               </svg>
             </summary>
             <nav className="absolute right-0 top-full mt-2 w-64 rounded-lg border border-border bg-surface p-2 shadow-lg">
-              {/* Home */}
-              <Link
-                href="/"
-                className="block rounded-md px-4 py-2 text-sm font-medium text-foreground/80 transition hover:bg-surface-muted hover:text-primary"
-                onClick={() => setMobileOpen(false)}
-              >
-                Home
-              </Link>
-
-              {/* Blog/Categories - positioned after Home */}
-              <div className="border-t border-border pt-2">
-                <Link
-                  href="/blog"
-                  className="block rounded-md px-4 py-2 text-sm font-semibold text-foreground/80 transition hover:bg-surface-muted hover:text-primary"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Blog - All Posts
-                </Link>
-                {categories.length > 0 && (
-                  <div className="px-4 py-2 text-sm font-semibold text-foreground/60">
-                    Categories
-                  </div>
-                )}
-                {categories.map((category) => (
-                  <div key={category.id}>
+              {menuItems.map((link, index) =>
+                link.href === "/blog" ? (
+                  <div
+                    key={link.id}
+                    className={index > 0 ? "border-t border-border pt-2" : undefined}
+                  >
                     <Link
-                      href={`/blog/${category.slug}`}
-                      className="block rounded-md px-4 py-2 text-sm font-medium text-foreground/80 transition hover:bg-surface-muted hover:text-primary"
+                      href="/blog"
+                      className="block rounded-md px-4 py-2 text-sm font-semibold text-foreground/80 transition hover:bg-surface-muted hover:text-primary"
                       onClick={() => setMobileOpen(false)}
                     >
-                      {category.name}
+                      {link.label} - All Posts
                     </Link>
-                    {category.subcategories.length > 0 && (
-                      <div>
-                        <button
-                          className="block w-full rounded-md px-4 py-1.5 text-xs text-foreground/50 transition hover:text-primary text-left"
-                          onClick={() =>
-                            setMobileCategoryOpen(
-                              mobileCategoryOpen === category.id ? null : category.id
-                            )
-                          }
+                    {categories.length > 0 && (
+                      <div className="px-4 py-2 text-sm font-semibold text-foreground/60">
+                        Categories
+                      </div>
+                    )}
+                    {categories.map((category) => (
+                      <div key={category.id}>
+                        <Link
+                          href={`/blog/${category.slug}`}
+                          className="block rounded-md px-4 py-2 text-sm font-medium text-foreground/80 transition hover:bg-surface-muted hover:text-primary"
+                          onClick={() => setMobileOpen(false)}
                         >
-                          {mobileCategoryOpen === category.id ? "Hide" : "Show"} subcategories
-                        </button>
-                        {mobileCategoryOpen === category.id && (
-                          <div className="ml-4">
-                            {category.subcategories.map((sub) => (
-                              <Link
-                                key={sub.id}
-                                href={`/blog/${category.slug}/${sub.slug}`}
-                                className="block rounded-md px-4 py-1.5 text-xs text-foreground/60 transition hover:text-primary"
-                                onClick={() => setMobileOpen(false)}
-                              >
-                                {sub.name}
-                              </Link>
-                            ))}
+                          {category.name}
+                        </Link>
+                        {category.subcategories.length > 0 && (
+                          <div>
+                            <button
+                              className="block w-full rounded-md px-4 py-1.5 text-left text-xs text-foreground/50 transition hover:text-primary"
+                              onClick={() =>
+                                setMobileCategoryOpen(
+                                  mobileCategoryOpen === category.id ? null : category.id
+                                )
+                              }
+                            >
+                              {mobileCategoryOpen === category.id ? "Hide" : "Show"} subcategories
+                            </button>
+                            {mobileCategoryOpen === category.id && (
+                              <div className="ml-4">
+                                {category.subcategories.map((sub) => (
+                                  <Link
+                                    key={sub.id}
+                                    href={`/blog/${category.slug}/${sub.slug}`}
+                                    className="block rounded-md px-4 py-1.5 text-xs text-foreground/60 transition hover:text-primary"
+                                    onClick={() => setMobileOpen(false)}
+                                  >
+                                    {sub.name}
+                                  </Link>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
-                    )}
+                    ))}
                   </div>
-                ))}
-              </div>
-
-              {/* Other nav links: Worksheets, Games */}
-              <div className="border-t border-border pt-2">
-                {navLinks.filter(link => link.href !== "/" && link.href !== "/blog").map((link) => (
-                  <Link
-                    key={link.href}
+                ) : isExternalHref(link.href) ? (
+                  <a
+                    key={link.id}
                     href={link.href}
-                    className="block rounded-md px-4 py-2 text-sm font-medium text-foreground/80 transition hover:bg-surface-muted hover:text-primary"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`${index > 0 ? "border-t border-border" : ""} block rounded-md px-4 py-2 text-sm font-medium text-foreground/80 transition hover:bg-surface-muted hover:text-primary`}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.id}
+                    href={link.href}
+                    className={`${index > 0 ? "border-t border-border" : ""} block rounded-md px-4 py-2 text-sm font-medium text-foreground/80 transition hover:bg-surface-muted hover:text-primary`}
                     onClick={() => setMobileOpen(false)}
                   >
                     {link.label}
                   </Link>
-                ))}
-              </div>
+                )
+              )}
             </nav>
           </details>
         </div>
