@@ -148,9 +148,6 @@ export function normalizeThemeSettings(settings: RawThemeSettings | null | undef
   const normalizedHeroBackgroundImageUrl = isValidAssetPath(heroBackgroundImageUrl)
     ? heroBackgroundImageUrl
     : null;
-  const heroStyle = requestedHeroStyle === "image" && !normalizedHeroBackgroundImageUrl
-    ? defaultThemeSettings.heroStyle
-    : requestedHeroStyle;
   const heroButtonHref = sanitizeRequiredText(settings?.heroButtonHref, defaultThemeSettings.heroButtonHref);
 
   return {
@@ -195,7 +192,7 @@ export function normalizeThemeSettings(settings: RawThemeSettings | null | undef
     heroSubtitle: sanitizeRequiredText(settings?.heroSubtitle, defaultThemeSettings.heroSubtitle),
     heroButtonText: sanitizeRequiredText(settings?.heroButtonText, defaultThemeSettings.heroButtonText),
     heroButtonHref: isValidHeroHref(heroButtonHref) ? heroButtonHref : defaultThemeSettings.heroButtonHref,
-    heroStyle,
+    heroStyle: requestedHeroStyle,
     heroBackgroundImageUrl: normalizedHeroBackgroundImageUrl,
     heroOverlay: settings?.heroOverlay ?? defaultThemeSettings.heroOverlay,
   };

@@ -2,12 +2,7 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
-function isValidSlug(slug: string) {
-  return SLUG_PATTERN.test(slug);
-}
+import { isValidSlug, slugFromNameOrInput } from "@/lib/slug";
 
 export async function GET() {
   await requireAdmin();
@@ -35,12 +30,12 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const name = String(body.name ?? "").trim();
-  const slug = String(body.slug ?? "").trim();
+  const slug = slugFromNameOrInput(name, String(body.slug ?? ""), "worksheet-subcategory");
   const categoryId = Number(body.categoryId);
 
-  if (!name || !slug || !body.categoryId) {
+  if (!name || !body.categoryId) {
     return NextResponse.json(
-      { error: "Name, slug, and category are required" },
+      { error: "Worksheet subcategory name and category are required" },
       { status: 400 }
     );
   }
@@ -60,6 +55,30 @@ export async function POST(request: Request) {
   }
 
   try {
+    const category = await prisma.worksheetCategory.findUnique({
+      where: { id: categoryId },
+      select: { id: true, slug: true },
+    });
+
+    if (!category) {
+      return NextResponse.json(
+        { error: "Worksheet category not found" },
+        { status: 404 }
+      );
+    }
+
+    const duplicateSlug = await prisma.worksheetSubcategory.findFirst({
+      where: { categoryId, slug },
+      select: { id: true },
+    });
+
+    if (duplicateSlug) {
+      return NextResponse.json(
+        { error: "This slug is already used in the selected category. Please choose another slug." },
+        { status: 409 }
+      );
+    }
+
     const subcategory = await prisma.worksheetSubcategory.create({
       data: {
         name,
@@ -81,7 +100,7 @@ export async function POST(request: Request) {
     if (error && typeof error === "object" && "code" in error) {
       if (error.code === "P2002") {
         return NextResponse.json(
-          { error: "A worksheet subcategory with this slug already exists in this category" },
+          { error: "This slug is already used in the selected category. Please choose another slug." },
           { status: 409 }
         );
       }

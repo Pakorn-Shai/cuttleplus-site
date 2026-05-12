@@ -17,13 +17,14 @@ type WorksheetCard = {
 
 type WorksheetGridProps = {
   worksheets: WorksheetCard[];
+  emptyMessage?: string;
 };
 
-export function WorksheetGrid({ worksheets }: WorksheetGridProps) {
+export function WorksheetGrid({ worksheets, emptyMessage = "No worksheets match this filter yet. Check back soon." }: WorksheetGridProps) {
   if (!worksheets.length) {
     return (
       <p className="rounded-xl border border-border bg-surface/60 p-5 text-sm text-muted">
-        No worksheets match this filter yet. Check back soon.
+        {emptyMessage}
       </p>
     );
   }

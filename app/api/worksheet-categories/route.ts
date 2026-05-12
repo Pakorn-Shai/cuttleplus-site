@@ -2,12 +2,7 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
-function isValidSlug(slug: string) {
-  return SLUG_PATTERN.test(slug);
-}
+import { isValidSlug, slugFromNameOrInput } from "@/lib/slug";
 
 export async function GET() {
   await requireAdmin();
@@ -39,11 +34,11 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const name = String(body.name ?? "").trim();
-  const slug = String(body.slug ?? "").trim();
+  const slug = slugFromNameOrInput(name, String(body.slug ?? ""), "worksheet-category");
 
-  if (!name || !slug) {
+  if (!name) {
     return NextResponse.json(
-      { error: "Name and slug are required" },
+      { error: "Worksheet category name is required" },
       { status: 400 }
     );
   }
@@ -52,6 +47,30 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "Slug must use lowercase letters, numbers, and hyphens only" },
       { status: 400 }
+    );
+  }
+
+  const existingSlug = await prisma.worksheetCategory.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+
+  if (existingSlug) {
+    return NextResponse.json(
+      { error: "This slug is already used. Please choose another slug." },
+      { status: 409 }
+    );
+  }
+
+  const existingName = await prisma.worksheetCategory.findUnique({
+    where: { name },
+    select: { id: true },
+  });
+
+  if (existingName) {
+    return NextResponse.json(
+      { error: "This worksheet category name is already used. Please choose another name." },
+      { status: 409 }
     );
   }
 
@@ -74,7 +93,7 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     if (error && typeof error === "object" && "code" in error && error.code === "P2002") {
       return NextResponse.json(
-        { error: "A worksheet category with this name or slug already exists" },
+        { error: "This slug or category name is already used. Please choose another value." },
         { status: 409 }
       );
     }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CmsShell } from "@/app/_components/cms-shell";
+import { isValidSlug, normalizeSlug } from "@/lib/slug";
 
 type WorksheetSubcategory = {
   id: number;
@@ -21,14 +22,14 @@ type WorksheetCategory = {
   };
 };
 
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
 export default function WorksheetCategoriesPage() {
   const [categories, setCategories] = useState<WorksheetCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ name: "", slug: "" });
   const [newForm, setNewForm] = useState({ name: "", slug: "" });
+  const [newSlugEdited, setNewSlugEdited] = useState(false);
+  const [editSlugEdited, setEditSlugEdited] = useState(false);
   const [error, setError] = useState("");
   const [showNewForm, setShowNewForm] = useState(false);
 
@@ -47,13 +48,19 @@ export default function WorksheetCategoriesPage() {
     fetchCategories();
   }, []);
 
-  const validateSlug = (slug: string) => SLUG_PATTERN.test(slug);
-
   const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
 
-    if (!validateSlug(newForm.slug)) {
+    const name = newForm.name.trim();
+    const slug = normalizeSlug(newForm.slug || name, "worksheet-category");
+
+    if (!name) {
+      setError("Worksheet category name is required.");
+      return;
+    }
+
+    if (!isValidSlug(slug)) {
       setError("Slug must use lowercase letters, numbers, and hyphens only.");
       return;
     }
@@ -62,11 +69,12 @@ export default function WorksheetCategoriesPage() {
       const res = await fetch("/api/worksheet-categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newForm),
+        body: JSON.stringify({ name, slug }),
       });
 
       if (res.ok) {
         setNewForm({ name: "", slug: "" });
+        setNewSlugEdited(false);
         setShowNewForm(false);
         fetchCategories();
       } else {
@@ -81,7 +89,15 @@ export default function WorksheetCategoriesPage() {
   const handleUpdate = async (id: number) => {
     setError("");
 
-    if (!validateSlug(editForm.slug)) {
+    const name = editForm.name.trim();
+    const slug = normalizeSlug(editForm.slug || name, "worksheet-category");
+
+    if (!name) {
+      setError("Worksheet category name is required.");
+      return;
+    }
+
+    if (!isValidSlug(slug)) {
       setError("Slug must use lowercase letters, numbers, and hyphens only.");
       return;
     }
@@ -90,11 +106,12 @@ export default function WorksheetCategoriesPage() {
       const res = await fetch(`/api/worksheet-categories/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({ name, slug }),
       });
 
       if (res.ok) {
         setEditingId(null);
+        setEditSlugEdited(false);
         fetchCategories();
       } else {
         const data = await res.json();
@@ -129,6 +146,7 @@ export default function WorksheetCategoriesPage() {
   const startEdit = (category: WorksheetCategory) => {
     setEditingId(category.id);
     setEditForm({ name: category.name, slug: category.slug });
+    setEditSlugEdited(false);
     setError("");
   };
 
@@ -152,6 +170,10 @@ export default function WorksheetCategoriesPage() {
       description="Manage grade levels and audience groups for worksheets."
       links={[{ href: "/admin/dashboard", label: "Back to dashboard" }]}
     >
+      <p className="mb-4 rounded-lg border border-border bg-surface/60 p-3 text-sm text-muted">
+        Worksheet categories are used to group worksheets on the public Worksheets page.
+      </p>
+
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <button
           onClick={() => setShowNewForm(!showNewForm)}
@@ -182,7 +204,14 @@ export default function WorksheetCategoriesPage() {
               <input
                 type="text"
                 value={newForm.name}
-                onChange={(event) => setNewForm({ ...newForm, name: event.target.value })}
+                onChange={(event) => {
+                  const name = event.target.value;
+                  setNewForm({
+                    ...newForm,
+                    name,
+                    slug: newSlugEdited ? newForm.slug : normalizeSlug(name, "worksheet-category"),
+                  });
+                }}
                 required
                 placeholder="Prathom 2"
                 className="rounded-lg border border-border bg-surface px-4 py-2 text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -193,12 +222,19 @@ export default function WorksheetCategoriesPage() {
               <input
                 type="text"
                 value={newForm.slug}
-                onChange={(event) => setNewForm({ ...newForm, slug: event.target.value.trim() })}
-                required
+                onChange={(event) => {
+                  setNewSlugEdited(true);
+                  const rawSlug = event.target.value;
+                  setNewForm({
+                    ...newForm,
+                    slug: rawSlug.trim() ? normalizeSlug(rawSlug, "worksheet-category") : "",
+                  });
+                }}
                 pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
                 placeholder="prathom-2"
                 className="rounded-lg border border-border bg-surface px-4 py-2 font-mono text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
+              <span className="text-xs text-muted">Leave blank to auto-generate from the name.</span>
             </label>
             <div className="flex gap-2">
               <button
@@ -212,6 +248,7 @@ export default function WorksheetCategoriesPage() {
                 onClick={() => {
                   setShowNewForm(false);
                   setNewForm({ name: "", slug: "" });
+                  setNewSlugEdited(false);
                   setError("");
                 }}
                 className="rounded-lg border border-border px-4 py-2 text-sm font-medium transition hover:bg-surface-muted"
@@ -234,7 +271,14 @@ export default function WorksheetCategoriesPage() {
                     <input
                       type="text"
                       value={editForm.name}
-                      onChange={(event) => setEditForm({ ...editForm, name: event.target.value })}
+                        onChange={(event) => {
+                          const name = event.target.value;
+                          setEditForm({
+                            ...editForm,
+                            name,
+                            slug: editSlugEdited ? editForm.slug : normalizeSlug(name, "worksheet-category"),
+                          });
+                        }}
                       required
                       className="rounded-lg border border-border bg-surface px-4 py-2 text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
@@ -244,11 +288,18 @@ export default function WorksheetCategoriesPage() {
                     <input
                       type="text"
                       value={editForm.slug}
-                      onChange={(event) => setEditForm({ ...editForm, slug: event.target.value.trim() })}
-                      required
+                        onChange={(event) => {
+                          setEditSlugEdited(true);
+                          const rawSlug = event.target.value;
+                          setEditForm({
+                            ...editForm,
+                            slug: rawSlug.trim() ? normalizeSlug(rawSlug, "worksheet-category") : "",
+                          });
+                        }}
                       pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
                       className="rounded-lg border border-border bg-surface px-4 py-2 font-mono text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
+                      <span className="text-xs text-muted">Leave blank to auto-generate from the name.</span>
                   </label>
                   <div className="flex gap-2">
                     <button
@@ -260,6 +311,7 @@ export default function WorksheetCategoriesPage() {
                     <button
                       onClick={() => {
                         setEditingId(null);
+                        setEditSlugEdited(false);
                         setError("");
                       }}
                       className="rounded-lg border border-border px-4 py-2 text-sm font-medium transition hover:bg-surface-muted"

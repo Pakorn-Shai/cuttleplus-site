@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CmsShell } from "@/app/_components/cms-shell";
+import { isValidSlug, normalizeSlug } from "@/lib/slug";
 
 type WorksheetCategory = {
   id: number;
@@ -21,8 +22,6 @@ type WorksheetSubcategory = {
   };
 };
 
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
 export default function WorksheetSubcategoriesPage() {
   const [subcategories, setSubcategories] = useState<WorksheetSubcategory[]>([]);
   const [categories, setCategories] = useState<WorksheetCategory[]>([]);
@@ -30,6 +29,8 @@ export default function WorksheetSubcategoriesPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ name: "", slug: "", categoryId: "" });
   const [newForm, setNewForm] = useState({ name: "", slug: "", categoryId: "" });
+  const [newSlugEdited, setNewSlugEdited] = useState(false);
+  const [editSlugEdited, setEditSlugEdited] = useState(false);
   const [error, setError] = useState("");
   const [showNewForm, setShowNewForm] = useState(false);
 
@@ -56,13 +57,19 @@ export default function WorksheetSubcategoriesPage() {
     fetchData();
   }, []);
 
-  const validateSlug = (slug: string) => SLUG_PATTERN.test(slug);
-
   const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
 
-    if (!validateSlug(newForm.slug)) {
+    const name = newForm.name.trim();
+    const slug = normalizeSlug(newForm.slug || name, "worksheet-subcategory");
+
+    if (!name || !newForm.categoryId) {
+      setError("Worksheet subcategory name and category are required.");
+      return;
+    }
+
+    if (!isValidSlug(slug)) {
       setError("Slug must use lowercase letters, numbers, and hyphens only.");
       return;
     }
@@ -71,11 +78,12 @@ export default function WorksheetSubcategoriesPage() {
       const res = await fetch("/api/worksheet-subcategories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newForm),
+        body: JSON.stringify({ ...newForm, name, slug }),
       });
 
       if (res.ok) {
         setNewForm({ name: "", slug: "", categoryId: "" });
+        setNewSlugEdited(false);
         setShowNewForm(false);
         fetchData();
       } else {
@@ -90,7 +98,15 @@ export default function WorksheetSubcategoriesPage() {
   const handleUpdate = async (id: number) => {
     setError("");
 
-    if (!validateSlug(editForm.slug)) {
+    const name = editForm.name.trim();
+    const slug = normalizeSlug(editForm.slug || name, "worksheet-subcategory");
+
+    if (!name || !editForm.categoryId) {
+      setError("Worksheet subcategory name and category are required.");
+      return;
+    }
+
+    if (!isValidSlug(slug)) {
       setError("Slug must use lowercase letters, numbers, and hyphens only.");
       return;
     }
@@ -99,11 +115,12 @@ export default function WorksheetSubcategoriesPage() {
       const res = await fetch(`/api/worksheet-subcategories/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({ ...editForm, name, slug }),
       });
 
       if (res.ok) {
         setEditingId(null);
+        setEditSlugEdited(false);
         fetchData();
       } else {
         const data = await res.json();
@@ -142,6 +159,7 @@ export default function WorksheetSubcategoriesPage() {
       slug: subcategory.slug,
       categoryId: subcategory.categoryId.toString(),
     });
+    setEditSlugEdited(false);
     setError("");
   };
 
@@ -171,6 +189,10 @@ export default function WorksheetSubcategoriesPage() {
         { href: "/admin/worksheet-categories", label: "Manage categories" },
       ]}
     >
+      <p className="mb-4 rounded-lg border border-border bg-surface/60 p-3 text-sm text-muted">
+        Worksheet subcategories should belong to one worksheet category.
+      </p>
+
       <div className="mb-6 flex items-center justify-between">
         <button
           onClick={() => setShowNewForm(!showNewForm)}
@@ -221,7 +243,14 @@ export default function WorksheetSubcategoriesPage() {
               <input
                 type="text"
                 value={newForm.name}
-                onChange={(event) => setNewForm({ ...newForm, name: event.target.value })}
+                onChange={(event) => {
+                  const name = event.target.value;
+                  setNewForm({
+                    ...newForm,
+                    name,
+                    slug: newSlugEdited ? newForm.slug : normalizeSlug(name, "worksheet-subcategory"),
+                  });
+                }}
                 required
                 placeholder="Mathematics"
                 className="rounded-lg border border-border bg-surface px-4 py-2 text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -232,12 +261,19 @@ export default function WorksheetSubcategoriesPage() {
               <input
                 type="text"
                 value={newForm.slug}
-                onChange={(event) => setNewForm({ ...newForm, slug: event.target.value.trim() })}
-                required
+                onChange={(event) => {
+                  setNewSlugEdited(true);
+                  const rawSlug = event.target.value;
+                  setNewForm({
+                    ...newForm,
+                    slug: rawSlug.trim() ? normalizeSlug(rawSlug, "worksheet-subcategory") : "",
+                  });
+                }}
                 pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
                 placeholder="math"
                 className="rounded-lg border border-border bg-surface px-4 py-2 font-mono text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
+              <span className="text-xs text-muted">Leave blank to auto-generate from the name.</span>
             </label>
             <div className="flex gap-2">
               <button
@@ -251,6 +287,7 @@ export default function WorksheetSubcategoriesPage() {
                 onClick={() => {
                   setShowNewForm(false);
                   setNewForm({ name: "", slug: "", categoryId: "" });
+                  setNewSlugEdited(false);
                   setError("");
                 }}
                 className="rounded-lg border border-border px-4 py-2 text-sm font-medium transition hover:bg-surface-muted"
@@ -289,7 +326,14 @@ export default function WorksheetSubcategoriesPage() {
                     <input
                       type="text"
                       value={editForm.name}
-                      onChange={(event) => setEditForm({ ...editForm, name: event.target.value })}
+                        onChange={(event) => {
+                          const name = event.target.value;
+                          setEditForm({
+                            ...editForm,
+                            name,
+                            slug: editSlugEdited ? editForm.slug : normalizeSlug(name, "worksheet-subcategory"),
+                          });
+                        }}
                       required
                       className="rounded-lg border border-border bg-surface px-4 py-2 text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
@@ -299,11 +343,18 @@ export default function WorksheetSubcategoriesPage() {
                     <input
                       type="text"
                       value={editForm.slug}
-                      onChange={(event) => setEditForm({ ...editForm, slug: event.target.value.trim() })}
-                      required
+                        onChange={(event) => {
+                          setEditSlugEdited(true);
+                          const rawSlug = event.target.value;
+                          setEditForm({
+                            ...editForm,
+                            slug: rawSlug.trim() ? normalizeSlug(rawSlug, "worksheet-subcategory") : "",
+                          });
+                        }}
                       pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
                       className="rounded-lg border border-border bg-surface px-4 py-2 font-mono text-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
+                      <span className="text-xs text-muted">Leave blank to auto-generate from the name.</span>
                   </label>
                   <div className="flex gap-2">
                     <button
@@ -315,6 +366,7 @@ export default function WorksheetSubcategoriesPage() {
                     <button
                       onClick={() => {
                         setEditingId(null);
+                        setEditSlugEdited(false);
                         setError("");
                       }}
                       className="rounded-lg border border-border px-4 py-2 text-sm font-medium transition hover:bg-surface-muted"

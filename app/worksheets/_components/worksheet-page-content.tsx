@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { CmsShell } from "@/app/_components/cms-shell";
 import { prisma } from "@/lib/prisma";
 import { WorksheetBrowser } from "./worksheet-browser";
@@ -61,6 +62,11 @@ export async function WorksheetPageContent({
     : selectedCategory
       ? `Browse and download worksheets for ${selectedCategory.name}.`
       : "Browse and download worksheets and learning resources.";
+  const emptyMessage = selectedSubcategory
+    ? "No worksheets in this subcategory yet."
+    : selectedCategory
+      ? "No worksheets in this category yet."
+      : "No worksheets available yet.";
 
   return (
     <CmsShell
@@ -69,11 +75,32 @@ export async function WorksheetPageContent({
       description={description}
       links={[{ href: "/", label: "Back to home" }, { href: "/blog", label: "Blog" }]}
     >
+      <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted" aria-label="Breadcrumb">
+        <Link href="/worksheets" className="font-medium text-primary hover:underline">
+          Worksheets
+        </Link>
+        {selectedCategory && (
+          <>
+            <span>/</span>
+            <Link href={`/worksheets/${selectedCategory.slug}`} className="font-medium text-primary hover:underline">
+              {selectedCategory.name}
+            </Link>
+          </>
+        )}
+        {selectedCategory && selectedSubcategory && (
+          <>
+            <span>/</span>
+            <span className="font-medium text-foreground">{selectedSubcategory.name}</span>
+          </>
+        )}
+      </nav>
+
       <WorksheetBrowser
         categories={categories}
         worksheets={worksheets}
         selectedCategorySlug={selectedCategory?.slug}
         selectedSubcategorySlug={selectedSubcategory?.slug}
+        emptyMessage={emptyMessage}
       />
     </CmsShell>
   );
