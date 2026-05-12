@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Logo } from "./Logo";
+import type { ThemeSettings } from "@/lib/theme-settings";
 
 type MenuItem = {
   id: string;
@@ -27,13 +28,14 @@ type Category = {
 
 type NavbarClientProps = {
   menuItems: MenuItem[];
+  theme: ThemeSettings;
 };
 
 function isExternalHref(href: string) {
   return href.startsWith("http://") || href.startsWith("https://");
 }
 
-export function NavbarClient({ menuItems }: NavbarClientProps) {
+export function NavbarClient({ menuItems, theme }: NavbarClientProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileCategoryOpen, setMobileCategoryOpen] = useState<number | null>(null);
@@ -53,7 +55,13 @@ export function NavbarClient({ menuItems }: NavbarClientProps) {
       <div className="mx-auto max-w-5xl px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Logo />
+          <Logo
+            logoUrl={theme.logoUrl}
+            logoSize={theme.logoSize}
+            showLogo={theme.showLogo}
+            showSiteName={theme.showSiteName}
+            siteName={theme.siteName}
+          />
 
           {/* Desktop Navigation */}
           <nav className="hidden items-center gap-8 sm:flex">

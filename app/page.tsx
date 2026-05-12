@@ -3,7 +3,9 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { ArticleCard } from "@/app/_components/article-card";
 import { prisma } from "@/lib/prisma";
+import { getThemeSettings, type ThemeSettings } from "@/lib/theme-settings";
 import { isHttpUrl } from "@/lib/urls";
+import type { CSSProperties } from "react";
 
 const POSTS_PER_CATEGORY = 6;
 const WORKSHEETS_LIMIT = 6;
@@ -12,8 +14,77 @@ const SHELF_LIST_CLASS =
 const SHELF_ITEM_CLASS =
   "flex w-[84vw] flex-none snap-start sm:w-[42vw] lg:w-[320px]";
 
+function getHeroBackgroundStyle(settings: ThemeSettings): CSSProperties {
+  if (settings.heroStyle === "solid") {
+    return { backgroundColor: settings.primaryColor };
+  }
+
+  if (settings.heroStyle === "image" && settings.heroBackgroundImageUrl) {
+    return {
+      backgroundImage: `url(${settings.heroBackgroundImageUrl})`,
+      backgroundPosition: "center",
+      backgroundSize: "cover",
+    };
+  }
+
+  if (settings.heroStyle === "minimal") {
+    return {
+      backgroundColor: settings.cardBackgroundColor,
+      color: settings.textColor,
+    };
+  }
+
+  return {
+    background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.accentColor})`,
+  };
+}
+
+function HomeHero({ settings }: { settings: ThemeSettings }) {
+  if (!settings.showHero) return null;
+
+  const isMinimal = settings.heroStyle === "minimal";
+  const isImage = settings.heroStyle === "image" && settings.heroBackgroundImageUrl;
+  const textClassName = isMinimal ? "text-foreground" : "text-white drop-shadow-sm";
+  const subtitleClassName = isMinimal ? "text-muted" : "text-white/90 drop-shadow-sm";
+  const buttonClassName = isMinimal
+    ? "inline-flex items-center rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground shadow-lg transition hover:-translate-y-0.5 hover:bg-primary-hover"
+    : "inline-flex items-center rounded-full border border-white/40 bg-white px-6 py-3 font-semibold text-primary shadow-xl shadow-emerald-950/20 transition hover:-translate-y-0.5 hover:bg-surface-muted hover:shadow-2xl hover:shadow-emerald-950/25";
+
+  return (
+    <section className="relative isolate overflow-hidden" style={getHeroBackgroundStyle(settings)}>
+      {!isMinimal ? (
+        <>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.32),transparent_36%),radial-gradient(circle_at_18%_28%,rgba(20,184,166,0.38),transparent_32%),radial-gradient(circle_at_82%_18%,rgba(255,255,255,0.2),transparent_26%)]" />
+          <div className="absolute left-1/2 top-10 h-64 w-64 -translate-x-1/2 rounded-full bg-white/20 blur-3xl sm:h-80 sm:w-80" />
+          <div className="absolute -left-24 bottom-4 h-52 w-52 rounded-full bg-emerald-300/20 blur-3xl sm:h-72 sm:w-72" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(3,63,55,0.18),rgba(3,63,55,0.02)_45%,rgba(3,63,55,0.28))]" />
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2288%22%20height%3D%2288%22%20viewBox%3D%220%200%2088%2088%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23ffffff%22%20stroke-opacity%3D%220.12%22%3E%3Cpath%20d%3D%22M0%2044h88M44%200v88%22/%3E%3Ccircle%20cx%3D%2244%22%20cy%3D%2244%22%20r%3D%221.5%22%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.16%22%20stroke%3D%22none%22/%3E%3C/g%3E%3C/svg%3E')] opacity-25 [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_72%,transparent)]" />
+        </>
+      ) : null}
+      {isImage && settings.heroOverlay ? <div className="absolute inset-0 bg-black/45" /> : null}
+      <div className="mx-auto max-w-4xl px-6 py-14 sm:py-20 md:py-24 lg:py-28">
+        <div className="relative z-10 text-center">
+          <div className={isMinimal ? "mx-auto mb-6 h-px w-28 bg-border" : "mx-auto mb-6 h-px w-28 bg-gradient-to-r from-transparent via-white/60 to-transparent"} />
+          <h1 className={`text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl ${textClassName}`}>
+            {settings.heroTitle}
+          </h1>
+          <p className={`mx-auto mt-4 max-w-2xl text-lg leading-8 sm:mt-6 ${subtitleClassName}`}>
+            {settings.heroSubtitle}
+          </p>
+          <div className="mt-7 sm:mt-10">
+            <Link href={settings.heroButtonHref} className={buttonClassName}>
+              {settings.heroButtonText}
+            </Link>
+          </div>
+        </div>
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background to-transparent" />
+    </section>
+  );
+}
+
 export default async function Home() {
-  const [categories, worksheets] = await Promise.all([
+  const [categories, worksheets, themeSettings] = await Promise.all([
     prisma.category.findMany({
       include: {
         subcategories: true,
@@ -36,39 +107,12 @@ export default async function Home() {
       orderBy: { createdAt: "desc" },
       take: WORKSHEETS_LIMIT,
     }),
+    getThemeSettings(),
   ]);
 
   return (
     <main className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative isolate overflow-hidden bg-gradient-to-br from-hero-from via-hero-via to-hero-to">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.32),transparent_36%),radial-gradient(circle_at_18%_28%,rgba(20,184,166,0.38),transparent_32%),radial-gradient(circle_at_82%_18%,rgba(255,255,255,0.2),transparent_26%)]" />
-        <div className="absolute left-1/2 top-10 h-64 w-64 -translate-x-1/2 rounded-full bg-white/20 blur-3xl sm:h-80 sm:w-80" />
-        <div className="absolute -left-24 bottom-4 h-52 w-52 rounded-full bg-emerald-300/20 blur-3xl sm:h-72 sm:w-72" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(3,63,55,0.18),rgba(3,63,55,0.02)_45%,rgba(3,63,55,0.28))]" />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2288%22%20height%3D%2288%22%20viewBox%3D%220%200%2088%2088%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23ffffff%22%20stroke-opacity%3D%220.12%22%3E%3Cpath%20d%3D%22M0%2044h88M44%200v88%22/%3E%3Ccircle%20cx%3D%2244%22%20cy%3D%2244%22%20r%3D%221.5%22%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.16%22%20stroke%3D%22none%22/%3E%3C/g%3E%3C/svg%3E')] opacity-25 [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_72%,transparent)]" />
-        <div className="mx-auto max-w-4xl px-6 py-14 sm:py-20 md:py-24 lg:py-28">
-          <div className="relative z-10 text-center">
-            <div className="mx-auto mb-6 h-px w-28 bg-gradient-to-r from-transparent via-white/60 to-transparent" />
-            <h1 className="text-4xl font-bold tracking-tight text-white drop-shadow-sm sm:text-5xl md:text-6xl">
-              CuttlePlus
-            </h1>
-            <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-white/90 drop-shadow-sm sm:mt-6">
-              Read about technology, tools, and tutorials made simple.
-            </p>
-            <div className="mt-7 sm:mt-10">
-              <Link
-                href="/blog"
-                className="inline-flex items-center rounded-full border border-white/40 bg-white px-6 py-3 font-semibold text-primary shadow-xl shadow-emerald-950/20 transition hover:-translate-y-0.5 hover:bg-surface-muted hover:shadow-2xl hover:shadow-emerald-950/25"
-              >
-                Start Reading
-              </Link>
-            </div>
-          </div>
-        </div>
-        {/* Bottom wave */}
-        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background to-transparent" />
-      </section>
+      <HomeHero settings={themeSettings} />
 
       {/* Categories Section */}
       <section className="bg-background pb-12 sm:pb-14">

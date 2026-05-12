@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { getThemeCssText } from "@/config/theme";
 import { Navbar } from "@/components/Navbar";
+import { getThemeCssVariables, getThemeSettings } from "@/lib/theme-settings";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,22 +15,28 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "CuttlePlus",
-    template: "%s | CuttlePlus",
-  },
-  description: "CuttlePlus - Blog and content platform",
-  icons: {
-    icon: "/favicon.ico",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const theme = await getThemeSettings();
 
-export default function RootLayout({
+  return {
+    title: {
+      default: theme.siteName,
+      template: `%s | ${theme.siteName}`,
+    },
+    description: theme.siteDescription,
+    icons: {
+      icon: theme.faviconUrl ?? "/favicon.ico",
+    },
+  };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const theme = await getThemeSettings();
+
   return (
     <html
       lang="en"
@@ -38,7 +45,7 @@ export default function RootLayout({
       <head>
         <style id="theme-config">{getThemeCssText()}</style>
       </head>
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col" style={getThemeCssVariables(theme)}>
         <Navbar />
         <div className="flex-1">{children}</div>
       </body>

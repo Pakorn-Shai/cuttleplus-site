@@ -101,3 +101,41 @@ model MenuItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model SiteSetting {
+  id                  String   @id @default(cuid())
+  siteName            String   @default("CuttlePlus")
+  siteDescription     String?
+  logoUrl             String?
+  faviconUrl          String?
+  logoPublicId        String?
+  faviconPublicId     String?
+  logoSize            String   @default("medium")
+
+  primaryColor        String   @default("#0f766e")
+  accentColor         String   @default("#14b8a6")
+  backgroundColor     String   @default("#ffffff")
+  textColor           String   @default("#111827")
+  mutedTextColor      String   @default("#6b7280")
+  cardBackgroundColor String   @default("#ffffff")
+
+  contentWidth        String   @default("1200px")
+  headerStyle         String   @default("default")
+  cardRadius          String   @default("16px")
+
+  showSiteName        Boolean  @default(true)
+  showLogo            Boolean  @default(true)
+  showFooterBranding  Boolean  @default(true)
+
+  showHero            Boolean  @default(true)
+  heroTitle           String   @default("CuttlePlus")
+  heroSubtitle        String   @default("Read about technology, tools, and tutorials made simple.")
+  heroButtonText      String   @default("Start Reading")
+  heroButtonHref      String   @default("/blog")
+  heroStyle           String   @default("gradient")
+  heroBackgroundImageUrl String?
+  heroOverlay         Boolean  @default(true)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
