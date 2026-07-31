@@ -1,3 +1,9 @@
+.next/
+node_modules/
+coverage/
+.env
+.env.local
+*.log
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
@@ -49,6 +55,7 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
-
-/app/generated/prisma
+prisma/dev.db
+public/uploads/
+src/generated/prisma/
+!.gitkeep

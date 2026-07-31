@@ -1,99 +1,72 @@
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 
-const adapter = new PrismaPg(process.env.DATABASE_URL ?? "");
-const prisma = new PrismaClient({ adapter });
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient, Prisma } from "../src/generated/prisma/client";
+import { createStoredDocument, blocksPlainText } from "../src/core/content/document";
+import { categories, sampleContents } from "../src/lib/sample-data";
 
-async function main() {
-  // Create categories with subcategories
-  const categories = [
-    {
-      name: "Technology",
-      slug: "technology",
-      subcategories: [
-        { name: "Web Development", slug: "web-development" },
-        { name: "Mobile Development", slug: "mobile-development" },
-        { name: "AI & Machine Learning", slug: "ai-machine-learning" },
-        { name: "DevOps", slug: "devops" },
-      ],
-    },
-    {
-      name: "Business",
-      slug: "business",
-      subcategories: [
-        { name: "Startups", slug: "startups" },
-        { name: "Marketing", slug: "marketing" },
-        { name: "Finance", slug: "finance" },
-      ],
-    },
-    {
-      name: "Design",
-      slug: "design",
-      subcategories: [
-        { name: "UI/UX", slug: "ui-ux" },
-        { name: "Graphic Design", slug: "graphic-design" },
-        { name: "Web Design", slug: "web-design" },
-      ],
-    },
-    {
-      name: "Tutorial",
-      slug: "tutorial",
-      subcategories: [
-        { name: "Beginner", slug: "beginner" },
-        { name: "Intermediate", slug: "intermediate" },
-        { name: "Advanced", slug: "advanced" },
-      ],
-    },
-  ];
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) throw new Error("DATABASE_URL is required.");
 
-  for (const category of categories) {
-    const { subcategories, ...categoryData } = category;
-    
-    // Find or create the category
-    const existingCategory = await prisma.category.findUnique({
-      where: { slug: categoryData.slug },
-    });
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
-    if (existingCategory) {
-      // Update: connect or create subcategories
-      for (const sub of subcategories) {
-        await prisma.subcategory.upsert({
-          where: {
-            categoryId_slug: {
-              categoryId: existingCategory.id,
-              slug: sub.slug,
-            },
-          },
-          create: {
-            name: sub.name,
-            slug: sub.slug,
-            categoryId: existingCategory.id,
-          },
-          update: {},
-        });
-      }
-    } else {
-      // Create category with subcategories
-      await prisma.category.create({
-        data: {
-          ...categoryData,
-          subcategories: {
-            create: subcategories,
-          },
-        },
-      });
-    }
+const contentType = {
+  Tutorial: "TUTORIAL",
+  "Knowledge Note": "KNOWLEDGE_NOTE",
+  "Code Snippet": "CODE_SNIPPET",
+  "Learning Log": "LEARNING_LOG",
+} as const;
+
+async function seed() {
+  const ownerEmail = process.env.OWNER_EMAIL;
+  if (ownerEmail) {
+    await prisma.user.upsert({ where: { email: ownerEmail }, update: {}, create: { email: ownerEmail, name: "Knowledge Owner" } });
   }
 
-  console.log("Seed data created successfully!");
+  for (const [index, category] of categories.entries()) {
+    await prisma.category.upsert({
+      where: { slug: category.slug },
+      update: { name: category.name, color: category.color, icon: category.icon, sortOrder: index },
+      create: { name: category.name, slug: category.slug, color: category.color, icon: category.icon, sortOrder: index },
+    });
+  }
+
+  for (const content of sampleContents) {
+    const category = await prisma.category.findUniqueOrThrow({ where: { slug: content.category.slug } });
+    const tags = await Promise.all(content.tags.map((name) => prisma.tag.upsert({
+      where: { slug: name.toLocaleLowerCase("en").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `tag-${name.length}` },
+      update: { name },
+      create: { name, slug: name.toLocaleLowerCase("en").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `tag-${name.length}` },
+    })));
+    const document = createStoredDocument(content.blocks);
+    const data = {
+      title: content.title,
+      slug: content.slug,
+      excerpt: content.excerpt,
+      contentType: contentType[content.type],
+      status: content.status === "published" ? "PUBLISHED" as const : "DRAFT" as const,
+      visibility: content.visibility.toUpperCase() as "PRIVATE" | "UNLISTED" | "PUBLIC",
+      contentJson: document as unknown as Prisma.InputJsonValue,
+      plainText: blocksPlainText(content.blocks),
+      readingTime: content.readingTime,
+      featured: content.featured ?? false,
+      publishedAt: content.publishedAt ? new Date(`${content.publishedAt}T00:00:00.000Z`) : null,
+      categoryId: category.id,
+    };
+    await prisma.content.upsert({
+      where: { slug: content.slug },
+      update: { ...data, tags: { deleteMany: {}, create: tags.map((tag) => ({ tagId: tag.id })) } },
+      create: { ...data, tags: { create: tags.map((tag) => ({ tagId: tag.id })) } },
+    });
+  }
+
+  await prisma.themeActivation.upsert({
+    where: { id: "active-theme" },
+    update: { themeId: "default", themeVersion: "0.1.0", settingsJson: {} },
+    create: { id: "active-theme", themeId: "default", themeVersion: "0.1.0", settingsJson: {} },
+  });
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+seed()
+  .then(() => console.log("Seeded Knowledge Hub database."))
+  .finally(() => prisma.$disconnect());
