@@ -1,141 +1,360 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-model Post {
-  id               Int       @id @default(autoincrement())
-  title            String
-  slug             String    @unique
-  content          String
-  coverImage       String?
-  meta_title       String?
-  meta_description String?
-  status           String    @default("draft")
-  categoryId       Int?
-  subcategoryId    Int?
-  category         Category? @relation(fields: [categoryId], references: [id])
-  subcategory      Subcategory? @relation(fields: [subcategoryId], references: [id])
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+enum Role {
+  OWNER
+}
+
+enum ContentStatus {
+  INBOX
+  DRAFT
+  IN_REVIEW
+  READY
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+  DELETED
+}
+
+enum Visibility {
+  PRIVATE
+  UNLISTED
+  PUBLIC
+}
+
+enum ContentType {
+  QUICK_NOTE
+  KNOWLEDGE_NOTE
+  TUTORIAL
+  ARTICLE
+  CODE_SNIPPET
+  TROUBLESHOOTING
+  CHEAT_SHEET
+  REFERENCE
+  LEARNING_LOG
+  PROJECT_NOTE
+  CASE_STUDY
+  CHECKLIST
+}
+
+enum RevisionSource {
+  MANUAL
+  AI
+  RESTORE
+  SYSTEM
+}
+
+enum RelationType {
+  RELATED
+  PREREQUISITE
+  FOLLOW_UP
+  ALTERNATIVE
+  SUPERSEDES
+  DUPLICATE
+  PART_OF
+}
+
+enum AIJobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AISuggestionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model User {
+  id        String            @id @default(cuid())
+  email     String            @unique
+  name      String?
+  image     String?
+  role      Role              @default(OWNER)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  revisions ContentRevision[]
+  auditLogs AuditLog[]
+}
+
+model Content {
+  id                  String            @id @default(cuid())
+  title               String
+  subtitle            String?
+  slug                String            @unique
+  excerpt             String?
+  contentType         ContentType       @default(KNOWLEDGE_NOTE)
+  status              ContentStatus     @default(DRAFT)
+  visibility          Visibility        @default(PRIVATE)
+  contentJson         Json
+  contentHtml         String            @default("")
+  plainText           String            @default("")
+  editorSchemaVersion Int               @default(1)
+  featured            Boolean           @default(false)
+  readingTime         Int               @default(1)
+  publishedAt         DateTime?
+  scheduledAt         DateTime?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  deletedAt           DateTime?
+  categoryId          String?
+  category            Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  coverMediaId        String?
+  coverMedia          Media?            @relation("ContentCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  tags                ContentTag[]
+  revisions           ContentRevision[]
+  seriesItems         SeriesItem[]
+  collectionItems     CollectionItem[]
+  outgoingRelations   ContentRelation[] @relation("RelationSource")
+  incomingRelations   ContentRelation[] @relation("RelationTarget")
+  sources             Source[]
+  aiJobs              AIJob[]
+  aiSuggestions       AISuggestion[]
+
+  @@index([status, visibility])
+  @@index([updatedAt])
+  @@index([categoryId])
+}
+
+model ContentRevision {
+  id             String         @id @default(cuid())
+  contentId      String
+  content        Content        @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  revisionNumber Int
+  title          String
+  excerpt        String?
+  contentJson    Json
+  contentHtml    String
+  plainText      String
+  metadataJson   Json?
+  source         RevisionSource @default(MANUAL)
+  reason         String?
+  createdById    String?
+  createdBy      User?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt      DateTime       @default(now())
+  suggestions    AISuggestion[]
+
+  @@unique([contentId, revisionNumber])
 }
 
 model Category {
-  id            Int           @id @default(autoincrement())
-  name          String        @unique
-  slug          String        @unique
-  subcategories Subcategory[]
-  posts         Post[]
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  icon        String?
+  color       String?
+  sortOrder   Int        @default(0)
+  parentId    String?
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryTree")
+  contents    Content[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
-model Subcategory {
-  id         Int      @id @default(autoincrement())
-  name       String
-  slug       String
-  categoryId Int
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  posts      Post[]
-
-  @@unique([categoryId, slug])
+model Tag {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  description String?
+  aliases     TagAlias[]
+  contents    ContentTag[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
-model Worksheet {
-  id            Int                   @id @default(autoincrement())
-  title         String
-  imageUrl      String
-  link          String
-  categoryId    Int?
-  subcategoryId Int?
-  category      WorksheetCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  subcategory   WorksheetSubcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
-  createdAt     DateTime              @default(now())
-  updatedAt     DateTime              @updatedAt
+model TagAlias {
+  id              String @id @default(cuid())
+  tagId           String
+  tag             Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  alias           String
+  normalizedAlias String @unique
 }
 
-model WorksheetCategory {
-  id            Int                    @id @default(autoincrement())
-  name          String                 @unique
-  slug          String                 @unique
-  worksheets    Worksheet[]
-  subcategories WorksheetSubcategory[]
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
+model ContentTag {
+  contentId String
+  tagId     String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, tagId])
 }
 
-model WorksheetSubcategory {
-  id         Int               @id @default(autoincrement())
-  name       String
-  slug       String
-  categoryId Int
-  category   WorksheetCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  worksheets Worksheet[]
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
-
-  @@unique([categoryId, slug])
+model Series {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  description String?
+  visibility  Visibility   @default(PRIVATE)
+  items       SeriesItem[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
-model Game {
-  id         Int      @id @default(autoincrement())
-  title      String
-  thumbnail  String
-  url        String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+model SeriesItem {
+  seriesId  String
+  contentId String
+  position  Int
+  series    Series  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@id([seriesId, contentId])
+  @@unique([seriesId, position])
 }
 
-model MenuItem {
-  id        String   @id @default(cuid())
-  label     String
-  href      String
-  order     Int      @default(0)
-  visible   Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Collection {
+  id          String           @id @default(cuid())
+  name        String
+  slug        String           @unique
+  description String?
+  visibility  Visibility       @default(PRIVATE)
+  items       CollectionItem[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model CollectionItem {
+  collectionId String
+  contentId    String
+  position     Int
+  note         String?
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  content      Content    @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, contentId])
+}
+
+model ContentRelation {
+  id              String       @id @default(cuid())
+  sourceContentId String
+  targetContentId String
+  relationType    RelationType
+  sourceContent   Content      @relation("RelationSource", fields: [sourceContentId], references: [id], onDelete: Cascade)
+  targetContent   Content      @relation("RelationTarget", fields: [targetContentId], references: [id], onDelete: Cascade)
+  createdAt       DateTime     @default(now())
+
+  @@unique([sourceContentId, targetContentId, relationType])
+}
+
+model Media {
+  id              String     @id @default(cuid())
+  storageProvider String
+  bucket          String
+  objectKey       String
+  publicUrl       String?
+  mimeType        String
+  fileName        String
+  fileSize        Int
+  width           Int?
+  height          Int?
+  altText         String?
+  caption         String?
+  credit          String?
+  sourceUrl       String?
+  visibility      Visibility @default(PRIVATE)
+  coverFor        Content[]  @relation("ContentCover")
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@unique([bucket, objectKey])
+}
+
+model Source {
+  id          String    @id @default(cuid())
+  contentId   String
+  content     Content   @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  url         String
+  title       String?
+  author      String?
+  publisher   String?
+  publishedAt DateTime?
+  accessedAt  DateTime?
+  sourceType  String?
+  note        String?
+  verified    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+}
+
+model AIJob {
+  id            String         @id @default(cuid())
+  contentId     String?
+  content       Content?       @relation(fields: [contentId], references: [id], onDelete: SetNull)
+  jobType       String
+  provider      String
+  model         String
+  promptVersion String
+  inputHash     String
+  status        AIJobStatus    @default(QUEUED)
+  inputTokens   Int?
+  outputTokens  Int?
+  estimatedCost Decimal?       @db.Decimal(12, 6)
+  errorMessage  String?
+  suggestions   AISuggestion[]
+  createdAt     DateTime       @default(now())
+  completedAt   DateTime?
+
+  @@index([inputHash])
+}
+
+model AISuggestion {
+  id             String             @id @default(cuid())
+  contentId      String
+  content        Content            @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  revisionId     String?
+  revision       ContentRevision?   @relation(fields: [revisionId], references: [id], onDelete: SetNull)
+  jobId          String
+  job            AIJob              @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  suggestionType String
+  targetBlockId  String?
+  originalJson   Json
+  suggestedJson  Json
+  status         AISuggestionStatus @default(PENDING)
+  createdAt      DateTime           @default(now())
+  reviewedAt     DateTime?
+}
+
+model ThemeActivation {
+  id           String   @id @default(cuid())
+  themeId      String
+  themeVersion String
+  settingsJson Json
+  activatedAt  DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model SiteSetting {
-  id                  String   @id @default(cuid())
-  siteName            String   @default("CuttlePlus")
-  siteDescription     String?
-  logoUrl             String?
-  faviconUrl          String?
-  logoPublicId        String?
-  faviconPublicId     String?
-  logoSize            String   @default("medium")
+  key       String   @id
+  valueJson Json
+  updatedAt DateTime @updatedAt
+}
 
-  primaryColor        String   @default("#0f766e")
-  accentColor         String   @default("#14b8a6")
-  backgroundColor     String   @default("#ffffff")
-  textColor           String   @default("#111827")
-  mutedTextColor      String   @default("#6b7280")
-  cardBackgroundColor String   @default("#ffffff")
+model SlugRedirect {
+  id         String   @id @default(cuid())
+  sourcePath String   @unique
+  targetPath String
+  statusCode Int      @default(308)
+  createdAt  DateTime @default(now())
+}
 
-  contentWidth        String   @default("1200px")
-  headerStyle         String   @default("default")
-  cardRadius          String   @default("16px")
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action       String
+  entityType   String
+  entityId     String?
+  metadataJson Json?
+  createdAt    DateTime @default(now())
 
-  showSiteName        Boolean  @default(true)
-  showLogo            Boolean  @default(true)
-  showFooterBranding  Boolean  @default(true)
-
-  showHero            Boolean  @default(true)
-  heroTitle           String   @default("CuttlePlus")
-  heroSubtitle        String   @default("Read about technology, tools, and tutorials made simple.")
-  heroButtonText      String   @default("Start Reading")
-  heroButtonHref      String   @default("/blog")
-  heroStyle           String   @default("gradient")
-  heroBackgroundImageUrl String?
-  heroOverlay         Boolean  @default(true)
-
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  @@index([entityType, entityId])
 }
