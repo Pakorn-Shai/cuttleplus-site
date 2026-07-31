@@ -1,0 +1,141 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Post {
+  id               Int       @id @default(autoincrement())
+  title            String
+  slug             String    @unique
+  content          String
+  coverImage       String?
+  meta_title       String?
+  meta_description String?
+  status           String    @default("draft")
+  categoryId       Int?
+  subcategoryId    Int?
+  category         Category? @relation(fields: [categoryId], references: [id])
+  subcategory      Subcategory? @relation(fields: [subcategoryId], references: [id])
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Category {
+  id            Int           @id @default(autoincrement())
+  name          String        @unique
+  slug          String        @unique
+  subcategories Subcategory[]
+  posts         Post[]
+}
+
+model Subcategory {
+  id         Int      @id @default(autoincrement())
+  name       String
+  slug       String
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  posts      Post[]
+
+  @@unique([categoryId, slug])
+}
+
+model Worksheet {
+  id            Int                   @id @default(autoincrement())
+  title         String
+  imageUrl      String
+  link          String
+  categoryId    Int?
+  subcategoryId Int?
+  category      WorksheetCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  subcategory   WorksheetSubcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+}
+
+model WorksheetCategory {
+  id            Int                    @id @default(autoincrement())
+  name          String                 @unique
+  slug          String                 @unique
+  worksheets    Worksheet[]
+  subcategories WorksheetSubcategory[]
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+}
+
+model WorksheetSubcategory {
+  id         Int               @id @default(autoincrement())
+  name       String
+  slug       String
+  categoryId Int
+  category   WorksheetCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  worksheets Worksheet[]
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@unique([categoryId, slug])
+}
+
+model Game {
+  id         Int      @id @default(autoincrement())
+  title      String
+  thumbnail  String
+  url        String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model MenuItem {
+  id        String   @id @default(cuid())
+  label     String
+  href      String
+  order     Int      @default(0)
+  visible   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SiteSetting {
+  id                  String   @id @default(cuid())
+  siteName            String   @default("CuttlePlus")
+  siteDescription     String?
+  logoUrl             String?
+  faviconUrl          String?
+  logoPublicId        String?
+  faviconPublicId     String?
+  logoSize            String   @default("medium")
+
+  primaryColor        String   @default("#0f766e")
+  accentColor         String   @default("#14b8a6")
+  backgroundColor     String   @default("#ffffff")
+  textColor           String   @default("#111827")
+  mutedTextColor      String   @default("#6b7280")
+  cardBackgroundColor String   @default("#ffffff")
+
+  contentWidth        String   @default("1200px")
+  headerStyle         String   @default("default")
+  cardRadius          String   @default("16px")
+
+  showSiteName        Boolean  @default(true)
+  showLogo            Boolean  @default(true)
+  showFooterBranding  Boolean  @default(true)
+
+  showHero            Boolean  @default(true)
+  heroTitle           String   @default("CuttlePlus")
+  heroSubtitle        String   @default("Read about technology, tools, and tutorials made simple.")
+  heroButtonText      String   @default("Start Reading")
+  heroButtonHref      String   @default("/blog")
+  heroStyle           String   @default("gradient")
+  heroBackgroundImageUrl String?
+  heroOverlay         Boolean  @default(true)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
