@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -11,16 +12,20 @@ const actionSchema = z.object({ contentId: z.string().cuid(), action: z.enum(["p
 export async function updateContentStatusAction(formData: FormData) {
   const owner = await requireOwner();
   const parsed = actionSchema.safeParse({ contentId: formData.get("contentId"), action: formData.get("action") });
-  if (!parsed.success) return;
+  if (!parsed.success) redirect("/admin/content?result=invalid");
   const existing = await prisma.content.findUnique({ where: { id: parsed.data.contentId } });
-  if (!existing) return;
-  if (parsed.data.action === "publish" && (!existing.title.trim() || !existing.slug.trim() || !existing.plainText.trim())) return;
+  if (!existing) redirect("/admin/content?result=not_found");
+  if (parsed.data.action === "publish" && (!existing.title.trim() || !existing.slug.trim() || !existing.plainText.trim())) redirect("/admin/content?result=incomplete");
 
   await prisma.$transaction(async (tx) => {
     const status = parsed.data.action === "publish" ? "PUBLISHED" : parsed.data.action === "archive" ? "ARCHIVED" : "DRAFT";
     const content = await tx.content.update({
       where: { id: existing.id },
-      data: { status, publishedAt: status === "PUBLISHED" ? existing.publishedAt ?? new Date() : existing.publishedAt },
+      data: {
+        status,
+        visibility: status === "PUBLISHED" && existing.visibility === "PRIVATE" ? "PUBLIC" : existing.visibility,
+        publishedAt: status === "PUBLISHED" ? existing.publishedAt ?? new Date() : existing.publishedAt,
+      },
     });
     if (status === "PUBLISHED") {
       const latest = await tx.contentRevision.aggregate({ where: { contentId: content.id }, _max: { revisionNumber: true } });
@@ -33,4 +38,6 @@ export async function updateContentStatusAction(formData: FormData) {
   revalidatePath("/knowledge");
   revalidatePath("/admin");
   revalidatePath("/admin/content");
+  revalidatePath(`/knowledge/${existing.slug}`);
+  redirect(`/admin/content?result=${parsed.data.action}`);
 }

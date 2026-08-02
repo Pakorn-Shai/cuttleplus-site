@@ -9,6 +9,7 @@ export interface ContentRepository {
   listPublic(): Promise<KnowledgeContent[]>;
   listPublishedRoutes(): Promise<KnowledgeContent[]>;
   listAll(): Promise<KnowledgeContent[]>;
+  findById(id: string): Promise<KnowledgeContent | null>;
   findPublicBySlug(slug: string): Promise<KnowledgeContent | null>;
   searchPublic(query: string): Promise<KnowledgeContent[]>;
   listCategories(): Promise<CategorySummary[]>;
@@ -43,6 +44,11 @@ class PrismaContentRepository implements ContentRepository {
   async listAll() {
     const contents = await prisma.content.findMany({ where: { deletedAt: null }, include: contentInclude, orderBy: { updatedAt: "desc" } });
     return contents.map(mapContent);
+  }
+
+  async findById(id: string) {
+    const content = await prisma.content.findFirst({ where: { id, deletedAt: null }, include: contentInclude });
+    return content ? mapContent(content) : null;
   }
 
   async findPublicBySlug(slug: string) {
