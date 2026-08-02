@@ -1,14 +1,6 @@
-.next/
+# Dependencies and package manager state
 node_modules/
-coverage/
-.env
-.env.local
-*.log
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -16,46 +8,35 @@ coverage/
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-node_modules/
+# Builds, tests, and generated output
+.next/
+out/
+build/
 dist/
-.env
-.vscode/*
-!.vscode/extensions.json
+coverage/
+src/generated/prisma/
+*.tsbuildinfo
 
-# wrangler files
-.wrangler
+# Local configuration and secrets
+.env*
+!.env.example
 .dev.vars*
 !.dev.vars.example
-!.env.example
 *.pem
 
-# debug
+# Deployment and editor state
+.vercel/
+.wrangler/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+
+# Logs and local data
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
 prisma/dev.db
 public/uploads/
-src/generated/prisma/
 !.gitkeep

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { EditorDraft } from "@/core/content/editor-service";
+import type { EditorDraft, EditorTaxonomyOptions } from "@/core/content/editor-service";
 
 const KnowledgeEditor = dynamic(
   () => import("./knowledge-editor").then((module) => module.KnowledgeEditor),
@@ -16,6 +16,6 @@ const KnowledgeEditor = dynamic(
   },
 );
 
-export function EditorLoader({ initialDraft }: { initialDraft?: EditorDraft }) {
-  return <KnowledgeEditor initialDraft={initialDraft} />;
+export function EditorLoader({ initialDraft, taxonomy }: { initialDraft?: EditorDraft; taxonomy: EditorTaxonomyOptions }) {
+  return <KnowledgeEditor initialDraft={initialDraft} taxonomy={taxonomy} />;
 }

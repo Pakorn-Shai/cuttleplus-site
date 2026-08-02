@@ -14,13 +14,15 @@
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "db:backfill-renderer": "tsx prisma/backfill-content-rendering.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1101.0",
     "@blocknote/core": "^0.52.1",
     "@blocknote/mantine": "^0.52.1",
     "@blocknote/react": "^0.52.1",

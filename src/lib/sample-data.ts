@@ -7,7 +7,7 @@ export const categories: CategorySummary[] = [
   { name: "Learning Journal", slug: "learning-journal", color: "#db3c74", icon: "BookOpen" },
 ];
 
-export const sampleContents: KnowledgeContent[] = [
+export const sampleContents: Array<Omit<KnowledgeContent, "headings">> = [
   {
     id: "content_sql_window",
     title: "เข้าใจ SQL Window Functions ผ่านโจทย์จริง",
