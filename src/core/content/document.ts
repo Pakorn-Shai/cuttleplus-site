@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { createSlug } from "./slug";
 import type { ContentBlock } from "./types";
 
 const contentBlockSchema = z.discriminatedUnion("type", [
@@ -20,6 +21,19 @@ export interface StoredContentDocument {
   version: 1;
   readerBlocks: ContentBlock[];
   editorBlocks?: unknown[];
+}
+
+export interface ContentHeading {
+  id: string;
+  level: 2 | 3;
+  text: string;
+}
+
+export interface ContentArtifacts {
+  blocks: ContentBlock[];
+  plainText: string;
+  html: string;
+  headings: ContentHeading[];
 }
 
 export function createStoredDocument(readerBlocks: ContentBlock[], editorBlocks?: unknown[]): StoredContentDocument {
@@ -82,6 +96,47 @@ export function blocksPlainText(blocks: ContentBlock[]): string {
     if (block.type === "callout" || block.type === "toggle") return `${block.title} ${block.text}`;
     return block.text;
   }).join("\n");
+}
+
+export function buildContentArtifacts(blocks: ContentBlock[]): ContentArtifacts {
+  const counts = new Map<string, number>();
+  const normalized = blocks.map((block) => {
+    if (block.type !== "heading") return block;
+    const base = createSlug(block.text) || "section";
+    const count = (counts.get(base) ?? 0) + 1;
+    counts.set(base, count);
+    return { ...block, id: count === 1 ? base : `${base}-${count}` };
+  });
+  return {
+    blocks: normalized,
+    plainText: blocksPlainText(normalized),
+    html: blocksToSafeHtml(normalized),
+    headings: normalized.flatMap((block) => block.type === "heading" ? [{ id: block.id, level: block.level, text: block.text }] : []),
+  };
+}
+
+export function blocksToSafeHtml(blocks: ContentBlock[]): string {
+  return blocks.map((block) => {
+    if (block.type === "paragraph") return `<p>${escapeText(block.text)}</p>`;
+    if (block.type === "heading") return `<h${block.level} id="${escapeAttribute(block.id)}">${escapeText(block.text)}</h${block.level}>`;
+    if (block.type === "list") return `<ul>${block.items.map((item) => `<li>${escapeText(item)}</li>`).join("")}</ul>`;
+    if (block.type === "callout") return `<aside class="callout ${block.tone}"><strong>${escapeText(block.title)}</strong><p>${escapeText(block.text)}</p></aside>`;
+    if (block.type === "toggle") return `<details${block.open ? " open" : ""}><summary>${escapeText(block.title)}</summary><p>${escapeText(block.text)}</p></details>`;
+    const language = block.language.toLowerCase().replace(/[^a-z0-9_-]/g, "") || "text";
+    return `<pre><code class="language-${language}">${escapeHtml(block.code)}</code></pre>`;
+  }).join("\n");
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function escapeText(value: string) {
+  return escapeHtml(value).replace(/\r?\n/g, "<br>");
+}
+
+function escapeAttribute(value: string) {
+  return escapeHtml(value).replace(/\s+/g, "-");
 }
 
 export function readerBlocksToEditorBlocks(blocks: ContentBlock[]): unknown[] {

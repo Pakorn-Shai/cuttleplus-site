@@ -2,7 +2,7 @@ import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { parseStoredDocument } from "./document";
+import { buildContentArtifacts, parseStoredDocument } from "./document";
 import type { CategorySummary, ContentKind, ContentStatus, KnowledgeContent } from "./types";
 
 export interface ContentRepository {
@@ -12,6 +12,7 @@ export interface ContentRepository {
   findPublicBySlug(slug: string): Promise<KnowledgeContent | null>;
   searchPublic(query: string): Promise<KnowledgeContent[]>;
   listCategories(): Promise<CategorySummary[]>;
+  findSlugRedirect(slug: string): Promise<{ targetPath: string; statusCode: number } | null>;
 }
 
 const contentInclude = {
@@ -68,9 +69,14 @@ class PrismaContentRepository implements ContentRepository {
       icon: category.icon ?? "BookOpen",
     }));
   }
+
+  async findSlugRedirect(slug: string) {
+    return prisma.slugRedirect.findUnique({ where: { sourcePath: `/knowledge/${slug}` }, select: { targetPath: true, statusCode: true } });
+  }
 }
 
 function mapContent(content: ContentRecord): KnowledgeContent {
+  const artifacts = buildContentArtifacts(parseStoredDocument(content.contentJson).readerBlocks);
   return {
     id: content.id,
     title: content.title,
@@ -90,7 +96,8 @@ function mapContent(content: ContentRecord): KnowledgeContent {
     updatedAt: content.updatedAt.toISOString().slice(0, 10),
     publishedAt: content.publishedAt?.toISOString().slice(0, 10),
     featured: content.featured,
-    blocks: parseStoredDocument(content.contentJson).readerBlocks,
+    blocks: artifacts.blocks,
+    headings: artifacts.headings,
   };
 }
 

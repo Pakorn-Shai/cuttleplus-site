@@ -3,6 +3,8 @@ import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import { saveEditorDraft } from "@/core/content/editor-service";
 import { getOwnerSession } from "@/lib/auth";
+import { consumeRateLimit } from "@/lib/rate-limit";
+import { hasTrustedOrigin } from "@/lib/request-security";
 
 const draftSchema = z.object({
   id: z.string().cuid().optional(),
@@ -19,6 +21,9 @@ const draftSchema = z.object({
 export async function POST(request: Request) {
   const owner = await getOwnerSession();
   if (!owner) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasTrustedOrigin(request)) return NextResponse.json({ error: "Untrusted origin" }, { status: 403 });
+  const rateLimit = await consumeRateLimit("content-write", owner.id, 180, 60);
+  if (!rateLimit.allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(rateLimit.retryAfter) } });
   const parsed = draftSchema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: "Invalid draft", details: parsed.error.flatten() }, { status: 400 });
 

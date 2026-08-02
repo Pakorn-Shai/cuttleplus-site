@@ -2,7 +2,7 @@ import "dotenv/config";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, Prisma } from "../src/generated/prisma/client";
-import { createStoredDocument, blocksPlainText } from "../src/core/content/document";
+import { buildContentArtifacts, createStoredDocument } from "../src/core/content/document";
 import { categories, sampleContents } from "../src/lib/sample-data";
 
 const connectionString = process.env.DATABASE_URL;
@@ -38,7 +38,8 @@ async function seed() {
       update: { name },
       create: { name, slug: name.toLocaleLowerCase("en").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `tag-${name.length}` },
     })));
-    const document = createStoredDocument(content.blocks);
+    const artifacts = buildContentArtifacts(content.blocks);
+    const document = createStoredDocument(artifacts.blocks);
     const data = {
       title: content.title,
       slug: content.slug,
@@ -47,7 +48,8 @@ async function seed() {
       status: content.status === "published" ? "PUBLISHED" as const : "DRAFT" as const,
       visibility: content.visibility.toUpperCase() as "PRIVATE" | "UNLISTED" | "PUBLIC",
       contentJson: document as unknown as Prisma.InputJsonValue,
-      plainText: blocksPlainText(content.blocks),
+      contentHtml: artifacts.html,
+      plainText: artifacts.plainText,
       readingTime: content.readingTime,
       featured: content.featured ?? false,
       publishedAt: content.publishedAt ? new Date(`${content.publishedAt}T00:00:00.000Z`) : null,

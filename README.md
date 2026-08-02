@@ -2,7 +2,7 @@
 
 เว็บคลังความรู้ส่วนตัวที่เน้นการอ่านง่าย การจัดระเบียบ และการค้นหาสิ่งที่เคยเรียนรู้ พัฒนาด้วย Next.js, TypeScript, BlockNote และ Prisma
 
-> **สถานะปัจจุบัน:** Foundation prototype พร้อมหน้า Public Library/Reader, Admin shell, BlockNote editor, Theme Registry และ Prisma schema รายละเอียดขอบเขตและลำดับงานถัดไปอยู่ที่ [docs/architecture.md](docs/architecture.md)
+> **สถานะปัจจุบัน:** Foundation prototype พร้อม Public/Admin, BlockNote editor, taxonomy, safe rendering, Revision History, Media Library/S3, production safeguards และ OpenRouter AI Suggestion/Diff Review รายละเอียดขอบเขตและลำดับงานถัดไปอยู่ที่ [docs/architecture.md](docs/architecture.md)
 
 ## ทดลองผ่าน Local
 
@@ -34,9 +34,12 @@ npm run dev
 | เกี่ยวกับ | [http://localhost:3000/about](http://localhost:3000/about) | หน้าแนะนำ Knowledge Hub |
 | Admin | [http://localhost:3000/admin](http://localhost:3000/admin) | Dashboard และเมนูจัดการต้นแบบ |
 | Editor | [http://localhost:3000/admin/content/new](http://localhost:3000/admin/content/new) | BlockNote editor prototype |
+| Media Library | [http://localhost:3000/admin/media](http://localhost:3000/admin/media) | อัปโหลด JPEG/PNG/WebP/GIF และจัดการ metadata |
+| AI Workspace | [http://localhost:3000/admin/ai](http://localhost:3000/admin/ai) | สร้าง ตรวจ diff และ Accept/Reject suggestion |
 | Search API | [http://localhost:3000/api/search?q=SQL](http://localhost:3000/api/search?q=SQL) | ผลการค้นหาในรูป JSON |
+| Health Check | [http://localhost:3000/api/health](http://localhost:3000/api/health) | สถานะ Application และ Database |
 
-Admin บางเมนูยังเป็น placeholder แต่ Content Manager, Editor autosave, revision, publish/archive และ owner session guard เชื่อม Database แล้ว ต้องตั้ง `ADMIN_PASSWORD` และ `ADMIN_SESSION_SECRET` ก่อนเข้า `/admin`
+Admin บางเมนูยังเป็น placeholder แต่ Content Manager, Editor autosave, revision, publish/archive, Category/Tag/Collection management และ owner session guard เชื่อม Database แล้ว ต้องตั้ง `ADMIN_PASSWORD` และ `ADMIN_SESSION_SECRET` ก่อนเข้า `/admin`
 
 ## คำสั่งที่ใช้บ่อย
 
@@ -52,6 +55,7 @@ Admin บางเมนูยังเป็น placeholder แต่ Content M
 | `npm run db:validate` | ตรวจความถูกต้องของ Prisma schema |
 | `npm run db:migrate` | Apply migrations ที่ยังไม่ถูกใช้กับ Database |
 | `npm run db:seed` | สร้าง Owner, หมวดหมู่ และข้อมูลเริ่มต้น |
+| `npm run db:backfill-renderer` | สร้าง HTML/plain text/heading artifacts ให้เนื้อหาเดิม |
 
 ตรวจคุณภาพทั้งหมดก่อนส่งงาน:
 
@@ -83,6 +87,19 @@ npm start
 | `ADMIN_USERNAME` | ชื่อผู้ใช้เดิมจาก CuttlePlus | ใช้เป็น fallback เมื่อไม่มี `OWNER_EMAIL` |
 | `ADMIN_PASSWORD` | รหัสผ่าน Owner | จำเป็นสำหรับ Admin; ห้าม commit |
 | `ADMIN_SESSION_SECRET` | ใช้ลงลายเซ็น session cookie; อย่างน้อย 32 ตัวอักษร | จำเป็นสำหรับ Admin; ห้าม commit |
+| `STORAGE_ENDPOINT` | S3-compatible endpoint เช่น Cloudflare R2 | จำเป็นเมื่อ provider ไม่ใช่ AWS S3 |
+| `STORAGE_REGION` | Region ของ S3; R2 ใช้ `auto` | จำเป็นใน Production |
+| `STORAGE_BUCKET` | Bucket สำหรับไฟล์ Media | จำเป็นใน Production |
+| `STORAGE_ACCESS_KEY_ID` | Access key ของ object storage | จำเป็นใน Production; ห้าม commit |
+| `STORAGE_SECRET_ACCESS_KEY` | Secret key ของ object storage | จำเป็นใน Production; ห้าม commit |
+| `STORAGE_PUBLIC_BASE_URL` | Public/CDN base URL ของ bucket | จำเป็นใน Production |
+| `MAX_UPLOAD_BYTES` | ขนาด upload สูงสุด; default 5 MB และระบบ cap ที่ 10 MB | ไม่บังคับ |
+| `OPENROUTER_API_KEY` | API key สำหรับ AI suggestion | จำเป็นเมื่อใช้ AI; ห้าม commit |
+| `OPENROUTER_BASE_URL` | OpenRouter API base URL | default `https://openrouter.ai/api/v1` |
+| `OPTIMIZER_MODEL` | model slug สำหรับ suggestion | default `openai/gpt-5.6-luna`; รองรับ `OPENROUTER_MODEL` เดิมเป็น fallback |
+| `AI_MAX_TOKENS` | จำนวน output tokens สูงสุด | default `4096` |
+| `AI_TEMPERATURE` | ระดับความสุ่มของคำตอบ (0-2) | default `0.2` |
+| `AI_TIMEOUT` | timeout ของ provider หน่วยมิลลิวินาที | default `60000` |
 
 ## โครงสร้างโปรเจกต์ปัจจุบัน
 

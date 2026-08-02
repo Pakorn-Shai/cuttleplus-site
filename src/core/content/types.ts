@@ -32,4 +32,5 @@ export interface KnowledgeContent {
   publishedAt?: string;
   featured?: boolean;
   blocks: ContentBlock[];
+  headings: { id: string; level: 2 | 3; text: string }[];
 }
