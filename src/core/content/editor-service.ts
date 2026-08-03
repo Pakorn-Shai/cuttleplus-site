@@ -13,16 +13,39 @@ export interface EditorDraft {
   categorySlug: string;
   tags: string[];
   visibility: "private" | "unlisted" | "public";
+  contentType: EditorContentType;
+  contentStatus: string;
   editorBlocks: unknown[];
 }
 
-export interface SaveEditorDraftInput extends EditorDraft {
+export type EditorContentType = "QUICK_NOTE" | "KNOWLEDGE_NOTE" | "TUTORIAL" | "ARTICLE" | "CODE_SNIPPET" | "TROUBLESHOOTING" | "CHEAT_SHEET" | "REFERENCE" | "LEARNING_LOG" | "PROJECT_NOTE" | "CASE_STUDY" | "CHECKLIST";
+
+export interface SaveEditorDraftInput extends Omit<EditorDraft, "contentStatus"> {
   createRevision?: boolean;
 }
 
 export interface EditorTaxonomyOptions {
   categories: { name: string; slug: string }[];
   tags: string[];
+}
+
+export interface QuickCaptureInput {
+  title?: string;
+  text: string;
+  sourceUrl?: string;
+  contentType: "note" | "code" | "link";
+}
+
+async function availableSlug(tx: Prisma.TransactionClient, requestedSlug: string) {
+  const matchingSlugs = await tx.content.findMany({
+    where: { OR: [{ slug: requestedSlug }, { slug: { startsWith: `${requestedSlug}-` } }] },
+    select: { slug: true },
+  });
+  const usedSlugs = new Set(matchingSlugs.map((item) => item.slug));
+  let slug = requestedSlug;
+  let suffix = 2;
+  while (usedSlugs.has(slug)) slug = `${requestedSlug}-${suffix++}`;
+  return slug;
 }
 
 export async function getEditorTaxonomyOptions(): Promise<EditorTaxonomyOptions> {
@@ -88,6 +111,8 @@ export async function getEditorDraft(id: string): Promise<EditorDraft | null> {
     categorySlug: content.category?.slug ?? "",
     tags: content.tags.map(({ tag }) => tag.name),
     visibility: content.visibility.toLowerCase() as EditorDraft["visibility"],
+    contentType: content.contentType,
+    contentStatus: content.status.toLowerCase(),
     editorBlocks: document.editorBlocks?.length ? document.editorBlocks : readerBlocksToEditorBlocks(document.readerBlocks),
   };
 }
@@ -102,16 +127,7 @@ export async function saveEditorDraft(input: SaveEditorDraftInput, userId?: stri
   const tagNames = [...new Set(input.tags.map((tag) => tag.trim()).filter(Boolean))].slice(0, 20);
 
   return prisma.$transaction(async (tx) => {
-    let slug = requestedSlug;
-    if (!input.id) {
-      const matchingSlugs = await tx.content.findMany({
-        where: { OR: [{ slug: requestedSlug }, { slug: { startsWith: `${requestedSlug}-` } }] },
-        select: { slug: true },
-      });
-      const usedSlugs = new Set(matchingSlugs.map((item) => item.slug));
-      let suffix = 2;
-      while (usedSlugs.has(slug)) slug = `${requestedSlug}-${suffix++}`;
-    }
+    const slug = input.id ? requestedSlug : await availableSlug(tx, requestedSlug);
     const previous = input.id ? await tx.content.findUnique({ where: { id: input.id }, select: { slug: true } }) : null;
     const tags = await Promise.all(tagNames.map((name) => {
       const tagSlug = createSlug(name);
@@ -122,6 +138,7 @@ export async function saveEditorDraft(input: SaveEditorDraftInput, userId?: stri
       slug,
       excerpt: input.excerpt.trim(),
       visibility: input.visibility.toUpperCase() as "PRIVATE" | "UNLISTED" | "PUBLIC",
+      contentType: input.contentType,
       contentJson: document,
       contentHtml: artifacts.html,
       plainText,
@@ -159,5 +176,49 @@ export async function saveEditorDraft(input: SaveEditorDraftInput, userId?: stri
 
     await tx.auditLog.create({ data: { userId, action: input.id ? "CONTENT_UPDATED" : "CONTENT_CREATED", entityType: "Content", entityId: content.id } });
     return { id: content.id, slug: content.slug, updatedAt: content.updatedAt.toISOString() };
+  });
+}
+
+export async function createQuickCapture(input: QuickCaptureInput, userId: string) {
+  const text = input.text.trim();
+  if (!text) throw new Error("CAPTURE_TEXT_REQUIRED");
+  const firstLine = text.split(/\r?\n/u).find((line) => line.trim())?.trim() ?? "";
+  const title = input.title?.trim() || firstLine.slice(0, 120) || `Quick Capture ${new Date().toISOString().slice(0, 10)}`;
+  const requestedSlug = createSlug(title) || `quick-capture-${Date.now()}`;
+  const blocks = input.contentType === "code"
+    ? [{ id: "capture-code", type: "code" as const, language: "text", code: text }]
+    : text.split(/\r?\n\s*\r?\n/u).filter(Boolean).map((paragraph, index) => ({ id: `capture-${index + 1}`, type: "paragraph" as const, text: paragraph.trim() }));
+  const artifacts = buildContentArtifacts(blocks);
+  const document = createStoredDocument(artifacts.blocks, readerBlocksToEditorBlocks(artifacts.blocks)) as unknown as Prisma.InputJsonValue;
+  const contentType = input.contentType === "code" ? "CODE_SNIPPET" : "QUICK_NOTE";
+
+  return prisma.$transaction(async (tx) => {
+    const slug = await availableSlug(tx, requestedSlug);
+    const content = await tx.content.create({ data: {
+      title,
+      slug,
+      excerpt: text.slice(0, 240),
+      contentType,
+      status: "INBOX",
+      visibility: "PRIVATE",
+      contentJson: document,
+      contentHtml: artifacts.html,
+      plainText: artifacts.plainText,
+      readingTime: Math.max(1, Math.ceil(artifacts.plainText.split(/\s+/u).filter(Boolean).length / 200)),
+      sources: input.sourceUrl ? { create: { url: input.sourceUrl, sourceType: input.contentType === "link" ? "link" : "reference", accessedAt: new Date() } } : undefined,
+    } });
+    await tx.contentRevision.create({ data: {
+      contentId: content.id,
+      revisionNumber: 1,
+      title: content.title,
+      excerpt: content.excerpt,
+      contentJson: document,
+      contentHtml: artifacts.html,
+      plainText: artifacts.plainText,
+      createdById: userId,
+      reason: "Quick capture",
+    } });
+    await tx.auditLog.create({ data: { userId, action: "CONTENT_CAPTURED", entityType: "Content", entityId: content.id } });
+    return content;
   });
 }

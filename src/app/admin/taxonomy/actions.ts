@@ -23,12 +23,13 @@ const categorySchema = baseSchema.extend({
 });
 const tagSchema = baseSchema;
 const collectionSchema = baseSchema.extend({ visibility: z.enum(["PRIVATE", "UNLISTED", "PUBLIC"]) });
+const seriesSchema = baseSchema.extend({ visibility: z.enum(["PRIVATE", "UNLISTED", "PUBLIC"]) });
 
 function value(formData: FormData, key: string) {
   return String(formData.get(key) ?? "");
 }
 
-function pathWithError(path: "/admin/categories" | "/admin/tags" | "/admin/collections", error: string): never {
+function pathWithError(path: "/admin/categories" | "/admin/tags" | "/admin/collections" | "/admin/series", error: string): never {
   redirect(`${path}?error=${encodeURIComponent(error)}` as Route);
 }
 
@@ -102,6 +103,7 @@ export async function saveTagAction(formData: FormData) {
   if (!parsed.success) pathWithError("/admin/tags", "invalid");
   const slug = createSlug(parsed.data.slug || parsed.data.name);
   if (!slug) pathWithError("/admin/tags", "invalid");
+  const previous = parsed.data.id ? await prisma.tag.findUnique({ where: { id: parsed.data.id }, select: { slug: true } }) : null;
   try {
     const tag = await prisma.tag.upsert({
       where: { id: parsed.data.id ?? "__new__" },
@@ -113,6 +115,10 @@ export async function saveTagAction(formData: FormData) {
     if (isUniqueError(error)) pathWithError("/admin/tags", "duplicate");
     throw error;
   }
+  revalidatePath("/tags");
+  revalidatePath(`/tags/${slug}`);
+  if (previous?.slug && previous.slug !== slug) revalidatePath(`/tags/${previous.slug}`);
+  revalidatePath("/sitemap.xml");
   revalidatePath("/admin/tags");
   redirect("/admin/tags");
 }
@@ -128,6 +134,9 @@ export async function deleteTagAction(formData: FormData) {
     prisma.tag.delete({ where: { id: tag.id } }),
     prisma.auditLog.create({ data: { userId: owner.id, action: "TAG_DELETED", entityType: "Tag", entityId: tag.id } }),
   ]);
+  revalidatePath("/tags");
+  revalidatePath(`/tags/${tag.slug}`);
+  revalidatePath("/sitemap.xml");
   revalidatePath("/admin/tags");
   redirect("/admin/tags");
 }
@@ -143,6 +152,7 @@ export async function saveCollectionAction(formData: FormData) {
   if (!contentIds.success) pathWithError("/admin/collections", "invalid");
   const validContents = await prisma.content.findMany({ where: { id: { in: contentIds.data }, deletedAt: null }, select: { id: true } });
   if (validContents.length !== contentIds.data.length) pathWithError("/admin/collections", "invalid");
+  const previous = parsed.data.id ? await prisma.collection.findUnique({ where: { id: parsed.data.id }, select: { slug: true } }) : null;
   try {
     await prisma.$transaction(async (tx) => {
       const collection = await tx.collection.upsert({
@@ -158,6 +168,10 @@ export async function saveCollectionAction(formData: FormData) {
     if (isUniqueError(error)) pathWithError("/admin/collections", "duplicate");
     throw error;
   }
+  revalidatePath("/collections");
+  revalidatePath(`/collections/${slug}`);
+  if (previous?.slug && previous.slug !== slug) revalidatePath(`/collections/${previous.slug}`);
+  revalidatePath("/sitemap.xml");
   revalidatePath("/admin/collections");
   redirect("/admin/collections");
 }
@@ -172,6 +186,82 @@ export async function deleteCollectionAction(formData: FormData) {
     prisma.collection.delete({ where: { id: collection.id } }),
     prisma.auditLog.create({ data: { userId: owner.id, action: "COLLECTION_DELETED", entityType: "Collection", entityId: collection.id } }),
   ]);
+  revalidatePath("/collections");
+  revalidatePath(`/collections/${collection.slug}`);
+  revalidatePath("/sitemap.xml");
   revalidatePath("/admin/collections");
   redirect("/admin/collections");
+}
+
+export async function saveSeriesAction(formData: FormData) {
+  const owner = await requireOwner();
+  const parsed = seriesSchema.safeParse({
+    id: value(formData, "id"),
+    name: value(formData, "name"),
+    slug: value(formData, "slug"),
+    description: value(formData, "description"),
+    visibility: value(formData, "visibility"),
+  });
+  if (!parsed.success) pathWithError("/admin/series", "invalid");
+  const slug = createSlug(parsed.data.slug || parsed.data.name);
+  if (!slug) pathWithError("/admin/series", "invalid");
+
+  const requestedIds = [...new Set(formData.getAll("contentIds").map(String))];
+  const contentIds = z.array(z.string().cuid()).safeParse(requestedIds);
+  if (!contentIds.success) pathWithError("/admin/series", "invalid");
+  const positioned = contentIds.data.map((contentId) => ({
+    contentId,
+    position: z.coerce.number().int().min(1).max(9_999).safeParse(value(formData, `position:${contentId}`)),
+  }));
+  if (positioned.some((item) => !item.position.success)) pathWithError("/admin/series", "invalid_order");
+  const orderedIds = positioned
+    .map((item) => ({ contentId: item.contentId, position: item.position.success ? item.position.data : 0 }))
+    .sort((left, right) => left.position - right.position || left.contentId.localeCompare(right.contentId));
+  if (new Set(orderedIds.map((item) => item.position)).size !== orderedIds.length) pathWithError("/admin/series", "invalid_order");
+
+  const validContents = await prisma.content.findMany({ where: { id: { in: contentIds.data }, deletedAt: null }, select: { id: true } });
+  if (validContents.length !== contentIds.data.length) pathWithError("/admin/series", "invalid");
+  const previous = parsed.data.id ? await prisma.series.findUnique({ where: { id: parsed.data.id }, select: { slug: true } }) : null;
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const series = await tx.series.upsert({
+        where: { id: parsed.data.id ?? "__new__" },
+        update: { name: parsed.data.name, slug, description: parsed.data.description || null, visibility: parsed.data.visibility },
+        create: { name: parsed.data.name, slug, description: parsed.data.description || null, visibility: parsed.data.visibility },
+      });
+      await tx.seriesItem.deleteMany({ where: { seriesId: series.id } });
+      if (orderedIds.length) await tx.seriesItem.createMany({
+        data: orderedIds.map((item, position) => ({ seriesId: series.id, contentId: item.contentId, position })),
+      });
+      await tx.auditLog.create({ data: { userId: owner.id, action: parsed.data.id ? "SERIES_UPDATED" : "SERIES_CREATED", entityType: "Series", entityId: series.id } });
+    });
+  } catch (error) {
+    if (isUniqueError(error)) pathWithError("/admin/series", "duplicate");
+    throw error;
+  }
+
+  revalidatePath("/series");
+  revalidatePath(`/series/${slug}`);
+  if (previous?.slug && previous.slug !== slug) revalidatePath(`/series/${previous.slug}`);
+  revalidatePath("/sitemap.xml");
+  revalidatePath("/admin/series");
+  redirect("/admin/series" as Route);
+}
+
+export async function deleteSeriesAction(formData: FormData) {
+  const owner = await requireOwner();
+  const id = z.string().cuid().safeParse(value(formData, "id"));
+  if (!id.success) pathWithError("/admin/series", "invalid");
+  const series = await prisma.series.findUnique({ where: { id: id.data } });
+  if (!series) redirect("/admin/series" as Route);
+  await prisma.$transaction([
+    prisma.series.delete({ where: { id: series.id } }),
+    prisma.auditLog.create({ data: { userId: owner.id, action: "SERIES_DELETED", entityType: "Series", entityId: series.id } }),
+  ]);
+  revalidatePath("/series");
+  revalidatePath(`/series/${series.slug}`);
+  revalidatePath("/sitemap.xml");
+  revalidatePath("/admin/series");
+  redirect("/admin/series" as Route);
 }

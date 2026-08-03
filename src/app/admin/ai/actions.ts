@@ -13,8 +13,9 @@ export async function reviewSuggestionAction(formData: FormData) {
   const owner = await requireOwner();
   const parsed = reviewSchema.safeParse({ suggestionId: formData.get("suggestionId"), decision: formData.get("decision") });
   if (!parsed.success) return;
+  let reviewed: Awaited<ReturnType<typeof reviewSuggestion>>;
   try {
-    await reviewSuggestion({ ...parsed.data, userId: owner.id });
+    reviewed = await reviewSuggestion({ ...parsed.data, userId: owner.id });
   } catch (error) {
     if (error instanceof Error && error.message === "CONTENT_CHANGED") redirect("/admin/ai?error=content_changed");
     throw error;
@@ -22,5 +23,17 @@ export async function reviewSuggestionAction(formData: FormData) {
   revalidatePath("/admin/ai");
   revalidatePath("/admin/content");
   revalidatePath("/knowledge");
+  revalidatePath("/tags");
+  revalidatePath("/tags/[slug]", "page");
+  revalidatePath("/series");
+  revalidatePath("/series/[slug]", "page");
+  revalidatePath("/collections");
+  revalidatePath("/collections/[slug]", "page");
+  if (parsed.data.decision === "accept") {
+    revalidatePath(`/admin/content/${reviewed.contentId}/edit`);
+    revalidatePath(`/admin/content/${reviewed.contentId}/preview`);
+    revalidatePath(`/admin/content/${reviewed.contentId}/revisions`);
+    revalidatePath(`/knowledge/${reviewed.slug}`);
+  }
   redirect(`/admin/ai?reviewed=${parsed.data.decision}` as Route);
 }

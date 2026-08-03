@@ -1,20 +1,58 @@
+import type { z } from "zod";
+import type { contentBlockSchema, structuredOutputSchema } from "./blocks/schema";
+
 export type ContentVisibility = "private" | "unlisted" | "public";
 export type ContentStatus = "inbox" | "draft" | "published" | "archived";
-export type ContentKind = "Tutorial" | "Knowledge Note" | "Code Snippet" | "Learning Log";
+export type ContentKind = "Quick Note" | "Knowledge Note" | "Tutorial" | "Article" | "Code Snippet" | "Troubleshooting" | "Cheat Sheet" | "Reference" | "Learning Log" | "Project Note" | "Case Study" | "Checklist";
 
-export type ContentBlock =
-  | { id: string; type: "paragraph"; text: string }
-  | { id: string; type: "heading"; level: 2 | 3; text: string }
-  | { id: string; type: "callout"; tone: "note" | "tip" | "warning"; title: string; text: string }
-  | { id: string; type: "code"; language: string; filename?: string; code: string }
-  | { id: string; type: "toggle"; title: string; text: string; open?: boolean }
-  | { id: string; type: "list"; items: string[] };
+export type StructuredOutput = z.infer<typeof structuredOutputSchema>;
+export type ContentBlock = z.infer<typeof contentBlockSchema>;
 
 export interface CategorySummary {
   name: string;
   slug: string;
   color: string;
   icon: string;
+}
+
+export interface TagSummary {
+  name: string;
+  slug: string;
+  description: string;
+  contentCount: number;
+}
+
+export interface SeriesSummary {
+  name: string;
+  slug: string;
+  description: string;
+  contentCount: number;
+}
+
+export interface SeriesDetail extends SeriesSummary {
+  visibility: "public" | "unlisted";
+  items: KnowledgeContent[];
+}
+
+export interface SeriesNavigation {
+  name: string;
+  slug: string;
+  position: number;
+  total: number;
+  previous?: { title: string; slug: string };
+  next?: { title: string; slug: string };
+}
+
+export interface CollectionSummary {
+  name: string;
+  slug: string;
+  description: string;
+  contentCount: number;
+}
+
+export interface CollectionDetail extends CollectionSummary {
+  visibility: "public" | "unlisted";
+  items: Array<{ content: KnowledgeContent; note: string }>;
 }
 
 export interface KnowledgeContent {

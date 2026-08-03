@@ -11,10 +11,18 @@ if (!connectionString) throw new Error("DATABASE_URL is required.");
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
 const contentType = {
+  "Quick Note": "QUICK_NOTE",
   Tutorial: "TUTORIAL",
   "Knowledge Note": "KNOWLEDGE_NOTE",
+  Article: "ARTICLE",
   "Code Snippet": "CODE_SNIPPET",
+  Troubleshooting: "TROUBLESHOOTING",
+  "Cheat Sheet": "CHEAT_SHEET",
+  Reference: "REFERENCE",
   "Learning Log": "LEARNING_LOG",
+  "Project Note": "PROJECT_NOTE",
+  "Case Study": "CASE_STUDY",
+  Checklist: "CHECKLIST",
 } as const;
 
 async function seed() {

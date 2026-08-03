@@ -1,8 +1,33 @@
 import { describe, expect, it } from "vitest";
 import { applyReadabilitySuggestion, readabilitySuggestionSchema } from "@/core/ai/suggestion";
+import { contentSnapshotHash, legacyContentSnapshotHash, matchesOriginalSuggestionSnapshot } from "@/core/ai/content-hash";
 import type { ContentBlock } from "@/core/content/types";
 
 describe("AI readability suggestions", () => {
+  it("uses the same content hash regardless of Prisma relations included at runtime", () => {
+    const content = { title: "ชื่อเดิม", excerpt: "เกริ่นเดิม", contentJson: { version: 1, readerBlocks: [] } };
+    const withRelations = { ...content, revisions: [{ id: "revision-1" }], aiJobs: [{ id: "job-1" }] };
+
+    expect(contentSnapshotHash(withRelations)).toBe(contentSnapshotHash(content));
+    expect(legacyContentSnapshotHash(withRelations)).not.toBe(contentSnapshotHash(content));
+  });
+
+  it("recognizes an unchanged persisted reader snapshot for legacy suggestions", () => {
+    const blocks = [{ id: "intro", type: "paragraph", text: "ข้อความเดิม" }];
+    const content = {
+      title: "ชื่อเดิม",
+      excerpt: "เกริ่นเดิม",
+      contentJson: { version: 1, readerBlocks: blocks, editorBlocks: [{ id: "editor-metadata" }] },
+    };
+    const original = { title: "ชื่อเดิม", excerpt: "เกริ่นเดิม", blocks };
+
+    expect(matchesOriginalSuggestionSnapshot(content, original)).toBe(true);
+    expect(matchesOriginalSuggestionSnapshot(
+      { ...content, contentJson: { ...content.contentJson, readerBlocks: [{ ...blocks[0], text: "แก้ภายหลัง" }] } },
+      original,
+    )).toBe(false);
+  });
+
   it("applies only reviewed text fields and never changes code blocks", () => {
     const blocks: ContentBlock[] = [
       { id: "intro", type: "paragraph", text: "ข้อความเดิม" },

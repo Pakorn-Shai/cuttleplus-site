@@ -7,7 +7,7 @@ import { useState } from "react";
 export function AIGenerateForm({ contents, initialContentId = "" }: { contents: { id: string; title: string }[]; initialContentId?: string }) {
   const router = useRouter();
   const [contentId, setContentId] = useState(initialContentId || contents[0]?.id || "");
-  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
 
   async function generate(event: React.FormEvent) {
@@ -20,7 +20,8 @@ export function AIGenerateForm({ contents, initialContentId = "" }: { contents: 
       const result = await response.json() as { error?: string };
       if (response.status === 401) { window.location.href = "/login"; return; }
       if (!response.ok) { setStatus("error"); setMessage(result.error ?? "สร้างคำแนะนำไม่สำเร็จ"); return; }
-      setStatus("idle");
+      setStatus("success");
+      setMessage("สร้าง Suggested Version แล้ว กรุณาตรวจสอบรายการด้านล่างก่อนกด Accept");
       router.refresh();
     } catch {
       setStatus("error");
@@ -28,5 +29,5 @@ export function AIGenerateForm({ contents, initialContentId = "" }: { contents: 
     }
   }
 
-  return <form className="ai-generate-form" onSubmit={generate}><label>เลือกเนื้อหา<select value={contentId} onChange={(event) => setContentId(event.target.value)} required>{contents.map((content) => <option value={content.id} key={content.id}>{content.title}</option>)}</select></label><button className="primary-button" disabled={!contentId || status === "loading"}><Sparkles size={14} /> {status === "loading" ? "AI กำลังวิเคราะห์..." : "สร้าง Suggested Version"}</button>{message && <p className="upload-error">{message}</p>}<small>ระบบส่งเฉพาะชื่อ Excerpt และ reader blocks ของบทความที่เลือกไปยัง OpenRouter</small></form>;
+  return <form className="ai-generate-form" onSubmit={generate}><label>เลือกเนื้อหา<select value={contentId} onChange={(event) => setContentId(event.target.value)} required>{contents.map((content) => <option value={content.id} key={content.id}>{content.title}</option>)}</select></label><button className="primary-button" disabled={!contentId || status === "loading"}><Sparkles size={14} /> {status === "loading" ? "AI กำลังวิเคราะห์..." : "สร้าง Suggested Version"}</button>{message && <p className={`ai-form-message ${status}`}>{message}</p>}<small>ระบบส่งเฉพาะชื่อ Excerpt และ reader blocks ของบทความที่เลือกไปยัง OpenRouter</small></form>;
 }

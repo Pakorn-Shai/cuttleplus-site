@@ -22,7 +22,7 @@ export function applyReadabilitySuggestion(blocks: ContentBlock[], suggestion: R
   const changes = new Map(suggestion.changes.map((change) => [change.blockId, change]));
   return blocks.map((block) => {
     const change = changes.get(block.id);
-    if (!change || block.type === "code") return block;
+    if (!change || block.type === "code" || block.type === "executable-code" || block.type === "formula-example" || block.type === "automation-script") return block;
     if (block.type === "paragraph" || block.type === "heading") return change.replacementText === null ? block : { ...block, text: change.replacementText };
     if (block.type === "list") return change.replacementItems === null ? block : { ...block, items: change.replacementItems };
     return {

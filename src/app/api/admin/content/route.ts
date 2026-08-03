@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import { saveEditorDraft } from "@/core/content/editor-service";
@@ -14,6 +15,7 @@ const draftSchema = z.object({
   categorySlug: z.string().max(160),
   tags: z.array(z.string().max(80)).max(20),
   visibility: z.enum(["private", "unlisted", "public"]),
+  contentType: z.enum(["QUICK_NOTE", "KNOWLEDGE_NOTE", "TUTORIAL", "ARTICLE", "CODE_SNIPPET", "TROUBLESHOOTING", "CHEAT_SHEET", "REFERENCE", "LEARNING_LOG", "PROJECT_NOTE", "CASE_STUDY", "CHECKLIST"]),
   editorBlocks: z.array(z.unknown()).max(2000),
   createRevision: z.boolean().optional(),
 });
@@ -28,7 +30,22 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid draft", details: parsed.error.flatten() }, { status: 400 });
 
   try {
-    return NextResponse.json(await saveEditorDraft(parsed.data, owner.id));
+    const saved = await saveEditorDraft(parsed.data, owner.id);
+    revalidatePath("/");
+    revalidatePath("/knowledge");
+    revalidatePath(`/knowledge/${saved.slug}`);
+    revalidatePath("/categories");
+    revalidatePath("/categories/[slug]", "page");
+    revalidatePath("/tags");
+    revalidatePath("/tags/[slug]", "page");
+    revalidatePath("/series");
+    revalidatePath("/series/[slug]", "page");
+    revalidatePath("/collections");
+    revalidatePath("/collections/[slug]", "page");
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/admin");
+    revalidatePath("/admin/content");
+    return NextResponse.json(saved);
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_SLUG") return NextResponse.json({ error: "Slug is required" }, { status: 400 });
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return NextResponse.json({ error: "Slug already exists" }, { status: 409 });

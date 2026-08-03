@@ -17,5 +17,11 @@ export async function restoreRevisionAction(formData: FormData) {
   revalidatePath(`/admin/content/${parsed.data.contentId}/edit`);
   revalidatePath(`/admin/content/${parsed.data.contentId}/revisions`);
   revalidatePath("/knowledge");
+  revalidatePath("/tags");
+  revalidatePath("/tags/[slug]", "page");
+  revalidatePath("/series");
+  revalidatePath("/series/[slug]", "page");
+  revalidatePath("/collections");
+  revalidatePath("/collections/[slug]", "page");
   redirect(`/admin/content/${parsed.data.contentId}/revisions?restored=1` as Route);
 }
