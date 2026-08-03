@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Maximize2, Minus, Moon, Plus, Sun } from "lucide-react";
+import { Check, Copy, Maximize2, Minimize2, Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ContentBlock } from "@/core/content/types";
 import { applyColorMode } from "@/lib/color-mode";
@@ -9,6 +9,7 @@ export function ArticleReader({ blocks }: { blocks: ContentBlock[] }) {
   const [fontSize, setFontSize] = useState(17);
   const [progress, setProgress] = useState(0);
   const [copied, setCopied] = useState<string | null>(null);
+  const [focusReading, setFocusReading] = useState(false);
 
   useEffect(() => {
     const onScroll = () => {
@@ -31,14 +32,20 @@ export function ArticleReader({ blocks }: { blocks: ContentBlock[] }) {
     applyColorMode(isDark ? "light" : "dark");
   }
 
+  function toggleFocusReading() {
+    const next = !focusReading;
+    setFocusReading(next);
+    document.querySelector(".article-shell, .admin-preview-paper")?.classList.toggle("focus-reading", next);
+  }
+
   return (
     <>
       <div className="reading-progress" style={{ width: `${progress}%` }} />
       <aside className="reader-controls" aria-label="ตั้งค่าการอ่าน">
-        <button onClick={() => setFontSize((value) => Math.min(value + 1, 21))} aria-label="เพิ่มขนาดตัวอักษร"><Plus size={16} /></button>
-        <button onClick={() => setFontSize((value) => Math.max(value - 1, 15))} aria-label="ลดขนาดตัวอักษร"><Minus size={16} /></button>
-        <button onClick={() => document.querySelector(".article-shell")?.classList.toggle("focus-reading")} aria-label="โหมดโฟกัส"><Maximize2 size={16} /></button>
-        <button onClick={toggleTheme} aria-label="สลับสี"><Moon size={16} /><Sun className="sr-only" /></button>
+        <button onClick={() => setFontSize((value) => Math.min(value + 1, 21))} aria-label="เพิ่มขนาดตัวอักษร" title="เพิ่มขนาดตัวอักษร"><span aria-hidden="true">A+</span></button>
+        <button onClick={() => setFontSize((value) => Math.max(value - 1, 15))} aria-label="ลดขนาดตัวอักษร" title="ลดขนาดตัวอักษร"><span aria-hidden="true">A−</span></button>
+        <button className={focusReading ? "active" : undefined} onClick={toggleFocusReading} aria-label={focusReading ? "ออกจากโหมดโฟกัส" : "เปิดโหมดโฟกัส"} aria-pressed={focusReading} title={focusReading ? "ออกจากโหมดโฟกัส" : "เปิดโหมดโฟกัส"}>{focusReading ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</button>
+        <button onClick={toggleTheme} aria-label="สลับธีมสว่างและมืด" title="สลับธีมสว่างและมืด"><Moon size={16} /><Sun className="sr-only" /></button>
       </aside>
       <div className="article-body" style={{ "--reader-font-size": `${fontSize}px` } as React.CSSProperties}>
         {blocks.map((block) => {

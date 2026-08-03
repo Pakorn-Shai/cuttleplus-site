@@ -93,8 +93,8 @@ export async function getEditorDraft(id: string): Promise<EditorDraft | null> {
 }
 
 export async function saveEditorDraft(input: SaveEditorDraftInput, userId?: string) {
-  const slug = createSlug(input.slug || input.title);
-  if (!slug) throw new Error("INVALID_SLUG");
+  const requestedSlug = createSlug(input.slug || input.title);
+  if (!requestedSlug) throw new Error("INVALID_SLUG");
   const artifacts = buildContentArtifacts(editorBlocksToReaderBlocks(input.editorBlocks));
   const plainText = artifacts.plainText;
   const document = createStoredDocument(artifacts.blocks, input.editorBlocks) as unknown as Prisma.InputJsonValue;
@@ -102,6 +102,16 @@ export async function saveEditorDraft(input: SaveEditorDraftInput, userId?: stri
   const tagNames = [...new Set(input.tags.map((tag) => tag.trim()).filter(Boolean))].slice(0, 20);
 
   return prisma.$transaction(async (tx) => {
+    let slug = requestedSlug;
+    if (!input.id) {
+      const matchingSlugs = await tx.content.findMany({
+        where: { OR: [{ slug: requestedSlug }, { slug: { startsWith: `${requestedSlug}-` } }] },
+        select: { slug: true },
+      });
+      const usedSlugs = new Set(matchingSlugs.map((item) => item.slug));
+      let suffix = 2;
+      while (usedSlugs.has(slug)) slug = `${requestedSlug}-${suffix++}`;
+    }
     const previous = input.id ? await tx.content.findUnique({ where: { id: input.id }, select: { slug: true } }) : null;
     const tags = await Promise.all(tagNames.map((name) => {
       const tagSlug = createSlug(name);
