@@ -1,12 +1,12 @@
-# Architecture — Foundation Prototype
+# Architecture — Working MVP
 
 ## Scope
 
-Implementation รอบแรกครอบคลุม Phase 0, Foundation และแกน Prototype จาก project blueprint โดยเน้นเส้นทางหลัก:
+Implementation ปัจจุบันครอบคลุม Foundation และแกน Working MVP จาก project blueprint โดยเน้นเส้นทางหลัก:
 
 `Login → Create → Write with BlockNote → Database autosave → Publish → Public reader → Browse List/Card`
 
-ยังไม่อ้างว่าเป็น Production MVP เต็มรูปแบบ เพราะ object storage, import/export และ AI provider ยังต้องพัฒนาต่อ ส่วน taxonomy workflow รอบแรกครอบคลุม Category, Tag และ Collection management แล้ว
+ระบบมี S3-compatible object storage, OpenRouter AI workflow, Quick Capture/Inbox, Markdown/JSON content export, versioned database backup พร้อม non-destructive validation, Site Settings และ Theme activation แล้ว ส่วน import, confirmed restore, scheduled publishing และ advanced bulk operations ยังเป็นงานระยะถัดไป
 
 ## Boundaries
 
@@ -35,7 +35,7 @@ Admin route มี `noindex`, signed HTTP-only session cookie, owner credential 
 
 ## Next implementation sequence
 
-1. เพิ่ม import/export, backup automation และ end-to-end tests
+1. เพิ่ม confirmed restore, bulk import และ end-to-end tests
 2. เพิ่ม background worker/queue หาก AI workload โตเกิน synchronous MVP
 
 ## Taxonomy workflow

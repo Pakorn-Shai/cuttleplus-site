@@ -1,15 +1,10 @@
 import { z } from "zod";
+import { blockToPlainText, blockToSafeHtml } from "./blocks/registry";
+import { contentBlockSchema } from "./blocks/schema";
 import { createSlug } from "./slug";
 import type { ContentBlock } from "./types";
 
-const contentBlockSchema = z.discriminatedUnion("type", [
-  z.object({ id: z.string(), type: z.literal("paragraph"), text: z.string() }),
-  z.object({ id: z.string(), type: z.literal("heading"), level: z.union([z.literal(2), z.literal(3)]), text: z.string() }),
-  z.object({ id: z.string(), type: z.literal("callout"), tone: z.enum(["note", "tip", "warning"]), title: z.string(), text: z.string() }),
-  z.object({ id: z.string(), type: z.literal("code"), language: z.string(), filename: z.string().optional(), code: z.string() }),
-  z.object({ id: z.string(), type: z.literal("toggle"), title: z.string(), text: z.string(), open: z.boolean().optional() }),
-  z.object({ id: z.string(), type: z.literal("list"), items: z.array(z.string()) }),
-]);
+export { contentBlockSchema, structuredOutputSchema } from "./blocks/schema";
 
 const storedDocumentSchema = z.object({
   version: z.literal(1),
@@ -90,12 +85,7 @@ export function editorBlocksToReaderBlocks(value: unknown[]): ContentBlock[] {
 }
 
 export function blocksPlainText(blocks: ContentBlock[]): string {
-  return blocks.map((block) => {
-    if (block.type === "list") return block.items.join(" ");
-    if (block.type === "code") return block.code;
-    if (block.type === "callout" || block.type === "toggle") return `${block.title} ${block.text}`;
-    return block.text;
-  }).join("\n");
+  return blocks.map(blockToPlainText).join("\n");
 }
 
 export function buildContentArtifacts(blocks: ContentBlock[]): ContentArtifacts {
@@ -116,27 +106,7 @@ export function buildContentArtifacts(blocks: ContentBlock[]): ContentArtifacts 
 }
 
 export function blocksToSafeHtml(blocks: ContentBlock[]): string {
-  return blocks.map((block) => {
-    if (block.type === "paragraph") return `<p>${escapeText(block.text)}</p>`;
-    if (block.type === "heading") return `<h${block.level} id="${escapeAttribute(block.id)}">${escapeText(block.text)}</h${block.level}>`;
-    if (block.type === "list") return `<ul>${block.items.map((item) => `<li>${escapeText(item)}</li>`).join("")}</ul>`;
-    if (block.type === "callout") return `<aside class="callout ${block.tone}"><strong>${escapeText(block.title)}</strong><p>${escapeText(block.text)}</p></aside>`;
-    if (block.type === "toggle") return `<details${block.open ? " open" : ""}><summary>${escapeText(block.title)}</summary><p>${escapeText(block.text)}</p></details>`;
-    const language = block.language.toLowerCase().replace(/[^a-z0-9_-]/g, "") || "text";
-    return `<pre><code class="language-${language}">${escapeHtml(block.code)}</code></pre>`;
-  }).join("\n");
-}
-
-function escapeHtml(value: string) {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-}
-
-function escapeText(value: string) {
-  return escapeHtml(value).replace(/\r?\n/g, "<br>");
-}
-
-function escapeAttribute(value: string) {
-  return escapeHtml(value).replace(/\s+/g, "-");
+  return blocks.map(blockToSafeHtml).join("\n");
 }
 
 export function readerBlocksToEditorBlocks(blocks: ContentBlock[]): unknown[] {
@@ -144,6 +114,9 @@ export function readerBlocksToEditorBlocks(blocks: ContentBlock[]): unknown[] {
     if (block.type === "heading") return [{ id: block.id, type: "heading", props: { level: block.level }, content: [{ type: "text", text: block.text, styles: {} }], children: [] }];
     if (block.type === "code") return [{ id: block.id, type: "codeBlock", props: { language: block.language }, content: [{ type: "text", text: block.code, styles: {} }], children: [] }];
     if (block.type === "list") return block.items.map((item, index) => ({ id: `${block.id}-${index}`, type: "bulletListItem", content: [{ type: "text", text: item, styles: {} }], children: [] }));
+    if (block.type === "executable-code") return [{ id: block.id, type: "codeBlock", props: { language: block.language }, content: [{ type: "text", text: block.code, styles: {} }], children: [] }];
+    if (block.type === "formula-example") return [{ id: block.id, type: "codeBlock", props: { language: block.engine }, content: [{ type: "text", text: block.expression, styles: {} }], children: [] }];
+    if (block.type === "automation-script") return [{ id: block.id, type: "codeBlock", props: { language: block.platform === "google-apps-script" ? "javascript" : "vb" }, content: [{ type: "text", text: block.code, styles: {} }], children: [] }];
     const text = block.type === "callout" || block.type === "toggle" ? `${block.title}: ${block.text}` : block.text;
     return [{ id: block.id, type: "paragraph", content: [{ type: "text", text, styles: {} }], children: [] }];
   });

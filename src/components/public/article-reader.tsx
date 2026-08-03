@@ -2,7 +2,7 @@
 
 import { Check, Copy, Maximize2, Minimize2, Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { ContentBlock } from "@/core/content/types";
+import type { ContentBlock, StructuredOutput } from "@/core/content/types";
 import { applyColorMode } from "@/lib/color-mode";
 
 export function ArticleReader({ blocks }: { blocks: ContentBlock[] }) {
@@ -54,9 +54,26 @@ export function ArticleReader({ blocks }: { blocks: ContentBlock[] }) {
           if (block.type === "list") return <ul key={block.id}>{block.items.map((item) => <li key={item}>{item}</li>)}</ul>;
           if (block.type === "callout") return <aside className={`callout ${block.tone}`} key={block.id}><span>{block.tone === "warning" ? "!" : "✦"}</span><div><strong>{block.title}</strong><p>{block.text}</p></div></aside>;
           if (block.type === "toggle") return <details className="toggle-block" open={block.open} key={block.id}><summary>{block.title}</summary><p>{block.text}</p></details>;
+          if (block.type === "executable-code" || block.type === "formula-example" || block.type === "automation-script") {
+            const source = block.type === "formula-example" ? block.expression : block.code;
+            const label = block.type === "formula-example" ? block.engine : block.type === "automation-script" ? block.platform : block.dialect ?? block.language;
+            const title = block.type === "executable-code" ? "ตัวอย่างโค้ด" : block.title;
+            const metadata = block.type === "formula-example" ? [...block.compatibility, ...block.prerequisites] : block.type === "automation-script" ? block.hostRequirements : [block.datasetId, block.datasetVersion].filter(Boolean) as string[];
+            return <section className="learning-example-block" key={block.id}>
+              <header><div><span className="pill">{label}</span><strong>{title}</strong></div><span className="learning-readonly">Saved example · Read only</span></header>
+              <div className="code-block"><div className="code-head"><span>{label}</span><button className="copy-code" onClick={() => copyCode(block.id, source)}>{copied === block.id ? <><Check size={13} /> คัดลอกแล้ว</> : <><Copy size={13} /> คัดลอก</>}</button></div><pre><code>{source}</code></pre></div>
+              {metadata.length > 0 && <ul className="learning-example-meta">{metadata.map((item) => <li key={item}>{item}</li>)}</ul>}
+              {block.output && <StructuredOutputDisplay output={block.output} />}
+            </section>;
+          }
           return <div className="code-block" key={block.id}><div className="code-head"><span>{block.filename ?? block.language}</span><button className="copy-code" onClick={() => copyCode(block.id, block.code)}>{copied === block.id ? <><Check size={13} /> คัดลอกแล้ว</> : <><Copy size={13} /> คัดลอก</>}</button></div><pre><code>{block.code}</code></pre></div>;
         })}
       </div>
     </>
   );
+}
+
+function StructuredOutputDisplay({ output }: { output: StructuredOutput }) {
+  if (output.type !== "table") return <div className={`learning-output ${output.type}`}><header>Saved output</header><pre>{output.value}</pre></div>;
+  return <div className="learning-output table"><header>Saved output</header><div className="learning-output-table"><table><thead><tr>{output.columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{output.rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((value, columnIndex) => <td key={columnIndex}>{value === null ? <span className="muted">NULL</span> : String(value)}</td>)}</tr>)}</tbody></table></div>{output.truncated && <small>ผลลัพธ์ถูกจำกัดจำนวนแถว</small>}</div>;
 }

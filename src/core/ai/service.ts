@@ -1,22 +1,18 @@
 import "server-only";
 
-import { createHash } from "node:crypto";
 import { Prisma } from "@/generated/prisma/client";
 import { buildContentArtifacts, createStoredDocument, parseStoredDocument, readerBlocksToEditorBlocks } from "@/core/content/document";
 import { prisma } from "@/lib/prisma";
 import { getOpenRouterModel, requestReadabilitySuggestion } from "./openrouter";
+import { contentSnapshotHash, legacyContentSnapshotHash, matchesOriginalSuggestionSnapshot } from "./content-hash";
 import { applyReadabilitySuggestion, readabilitySuggestionSchema } from "./suggestion";
 
 const PROMPT_VERSION = "readability-v1";
 
-function contentHash(input: { title: string; excerpt: string | null; contentJson: unknown }) {
-  return createHash("sha256").update(JSON.stringify(input)).digest("hex");
-}
-
 export async function createReadabilitySuggestion(contentId: string) {
   const content = await prisma.content.findUnique({ where: { id: contentId }, include: { revisions: { orderBy: { revisionNumber: "desc" }, take: 1 } } });
   if (!content || content.deletedAt) throw new Error("CONTENT_NOT_FOUND");
-  const inputHash = contentHash(content);
+  const inputHash = contentSnapshotHash(content);
   const duplicate = await prisma.aISuggestion.findFirst({ where: { contentId, status: "PENDING", job: { inputHash, jobType: "READABILITY" } }, include: { job: true } });
   if (duplicate) return duplicate;
   const model = getOpenRouterModel();
@@ -41,14 +37,27 @@ export async function createReadabilitySuggestion(contentId: string) {
 
 export async function reviewSuggestion(input: { suggestionId: string; decision: "accept" | "reject"; userId: string }) {
   return prisma.$transaction(async (tx) => {
-    const suggestion = await tx.aISuggestion.findUnique({ where: { id: input.suggestionId }, include: { content: true, job: true } });
+    const suggestion = await tx.aISuggestion.findUnique({
+      where: { id: input.suggestionId },
+      include: {
+        content: { include: { revisions: { orderBy: { revisionNumber: "desc" }, take: 1 } } },
+        job: true,
+      },
+    });
     if (!suggestion || suggestion.status !== "PENDING") throw new Error("SUGGESTION_NOT_FOUND");
     if (input.decision === "reject") {
       await tx.aISuggestion.update({ where: { id: suggestion.id }, data: { status: "REJECTED", reviewedAt: new Date() } });
       await tx.auditLog.create({ data: { userId: input.userId, action: "AI_SUGGESTION_REJECTED", entityType: "AISuggestion", entityId: suggestion.id } });
-      return;
+      return { contentId: suggestion.contentId, slug: suggestion.content.slug };
     }
-    if (contentHash(suggestion.content) !== suggestion.job.inputHash) throw new Error("CONTENT_CHANGED");
+    const currentHash = contentSnapshotHash(suggestion.content);
+    // Suggestions created before the canonical hash fix included the relation
+    // loaded by createReadabilitySuggestion. Prefer its exact legacy hash, then
+    // fall back to the persisted original reader snapshot for old jobs whose
+    // metadata timestamp changed without any user-visible content changing.
+    const legacyHash = legacyContentSnapshotHash(suggestion.content);
+    const originalStillMatches = matchesOriginalSuggestionSnapshot(suggestion.content, suggestion.originalJson);
+    if (currentHash !== suggestion.job.inputHash && legacyHash !== suggestion.job.inputHash && !originalStillMatches) throw new Error("CONTENT_CHANGED");
     const proposed = readabilitySuggestionSchema.safeParse(suggestion.suggestedJson);
     if (!proposed.success) throw new Error("INVALID_SUGGESTION");
     const stored = parseStoredDocument(suggestion.content.contentJson);
@@ -66,5 +75,6 @@ export async function reviewSuggestion(input: { suggestionId: string; decision: 
     } });
     await tx.aISuggestion.update({ where: { id: suggestion.id }, data: { status: "ACCEPTED", reviewedAt: new Date() } });
     await tx.auditLog.create({ data: { userId: input.userId, action: "AI_SUGGESTION_ACCEPTED", entityType: "AISuggestion", entityId: suggestion.id } });
+    return { contentId: content.id, slug: content.slug };
   });
 }

@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
+import { getSiteSettings } from "@/core/site/settings";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
-  title: { default: "Knowledge Hub", template: "%s · Knowledge Hub" },
-  description: "คลังความรู้ส่วนตัวที่เขียนง่าย อ่านสบาย และค้นพบสิ่งที่เคยเรียนรู้ได้เสมอ",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+    title: { default: settings.siteName, template: `%s · ${settings.siteName}` },
+    description: settings.siteDescription,
+  };
+}
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="th" suppressHydrationWarning>
+    <html lang="th" suppressHydrationWarning data-scroll-behavior="smooth">
       <body>{children}</body>
     </html>
   );

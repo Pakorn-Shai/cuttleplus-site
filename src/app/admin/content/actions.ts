@@ -7,11 +7,11 @@ import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireOwner } from "@/lib/auth";
 
-const actionSchema = z.object({ contentId: z.string().cuid(), action: z.enum(["publish", "draft", "archive"]) });
+const actionSchema = z.object({ contentId: z.string().cuid(), action: z.enum(["publish", "draft", "archive", "restore"]), returnTo: z.enum(["content", "inbox"]).default("content") });
 
 export async function updateContentStatusAction(formData: FormData) {
   const owner = await requireOwner();
-  const parsed = actionSchema.safeParse({ contentId: formData.get("contentId"), action: formData.get("action") });
+  const parsed = actionSchema.safeParse({ contentId: formData.get("contentId"), action: formData.get("action"), returnTo: formData.get("returnTo") ?? "content" });
   if (!parsed.success) redirect("/admin/content?result=invalid");
   const existing = await prisma.content.findUnique({ where: { id: parsed.data.contentId } });
   if (!existing) redirect("/admin/content?result=not_found");
@@ -36,8 +36,15 @@ export async function updateContentStatusAction(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/knowledge");
+  revalidatePath("/tags");
+  revalidatePath("/tags/[slug]", "page");
+  revalidatePath("/series");
+  revalidatePath("/series/[slug]", "page");
+  revalidatePath("/collections");
+  revalidatePath("/collections/[slug]", "page");
+  revalidatePath("/sitemap.xml");
   revalidatePath("/admin");
   revalidatePath("/admin/content");
   revalidatePath(`/knowledge/${existing.slug}`);
-  redirect(`/admin/content?result=${parsed.data.action}`);
+  redirect(`/admin/${parsed.data.returnTo}?result=${parsed.data.action}`);
 }

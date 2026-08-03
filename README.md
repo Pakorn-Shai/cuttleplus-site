@@ -2,62 +2,148 @@
 
 เว็บคลังความรู้ส่วนตัวที่เน้นการอ่านง่าย การจัดระเบียบ และการค้นหาสิ่งที่เคยเรียนรู้ พัฒนาด้วย Next.js, TypeScript, BlockNote และ Prisma
 
-> **สถานะปัจจุบัน:** Foundation prototype พร้อม Public/Admin, BlockNote editor, taxonomy, safe rendering, Revision History, Media Library/S3, production safeguards และ OpenRouter AI Suggestion/Diff Review รายละเอียดขอบเขตและลำดับงานถัดไปอยู่ที่ [docs/architecture.md](docs/architecture.md)
+> **สถานะปัจจุบัน:** Working MVP พร้อม Public/Admin, BlockNote editor, Quick Capture/Inbox, Content filters, taxonomy, safe rendering, Revision History, Markdown/JSON export, versioned database backup/validation, Media Library/S3, Site Settings, Theme activation, production safeguards และ OpenRouter AI Suggestion/Diff Review รายละเอียดสถาปัตยกรรมอยู่ที่ [docs/architecture.md](docs/architecture.md)
 
-## ทดลองผ่าน Local
+## สถานะฟีเจอร์
+
+| ส่วน | สถานะ | หมายเหตุ |
+| --- | --- | --- |
+| Public library, article, category, tag และ search | ใช้งานได้ | แสดงเฉพาะเนื้อหาตาม status/visibility rule |
+| Owner login และ Admin guard | ใช้งานได้ | session cookie อายุ 8 ชั่วโมง; รองรับ Owner คนเดียว |
+| BlockNote editor และ autosave | ใช้งานได้ | รองรับ paragraph, heading, list และ code block เป็นหลัก |
+| Quick Capture, Inbox และ Content lifecycle | ใช้งานได้ | Draft/Publish/Archive พร้อม audit log |
+| Category, Tag, Series และ Collection | ใช้งานได้ | Relations/Sources ยังไม่มี workflow ครบทุกส่วนใน UI |
+| Revision, restore และ Markdown/JSON export | ใช้งานได้ | Restore สำรอง revision ปัจจุบันก่อนเสมอ |
+| Media Library | ใช้งานได้ | Local storage ใน development; S3-compatible storage ใน production |
+| Theme และ Site Settings | ใช้งานได้ | มี Clarity (`default`) และ Notebook (`minimal`) |
+| Database backup | บางส่วน | ดาวน์โหลดและ validate ได้ แต่ยังไม่มี confirmed restore/import |
+| OpenRouter AI suggestion | บางส่วน | Generate และ Diff Review ใช้ได้; ดูข้อจำกัด AI ด้านล่าง |
+| Learning example blocks | บางส่วน | Schema, validation, export และ Public read-only renderer พร้อมแล้ว; Admin authoring/sandbox/datasets ยังไม่ทำ |
+| Scheduled publishing, semantic search และ E2E tests | ยังไม่ทำ | อยู่ในลำดับพัฒนาถัดไป |
+
+## เริ่มใช้งานบน Local
 
 ### สิ่งที่ต้องมี
 
 - Node.js `20.9` ขึ้นไป
-- npm (มาพร้อม Node.js)
+- npm
+- PostgreSQL ที่เชื่อมต่อได้และ database ว่างสำหรับโปรเจกต์
 
-### ติดตั้งและเปิด Development Server
+### 1. ตั้งค่า Environment
 
 ```bash
 cp .env.example .env
+```
+
+อย่างน้อยต้องกำหนด `DATABASE_URL`, `OWNER_EMAIL`, `ADMIN_PASSWORD` และ `ADMIN_SESSION_SECRET` โดยสร้าง session secret ได้ด้วย:
+
+```bash
+openssl rand -hex 32
+```
+
+ห้าม commit `.env` หรือ secret จริงเข้า repository
+
+### 2. ติดตั้งและเตรียม Database
+
+```bash
 npm ci
+npm run db:migrate
+npm run db:seed
+```
+
+`db:seed` สร้าง Owner จาก `OWNER_EMAIL` พร้อมหมวดหมู่และบทความตัวอย่าง คำสั่งนี้รันซ้ำได้ แต่จะอัปเดตข้อมูลตัวอย่างที่ใช้ slug เดิม จึงไม่ควรชี้คำสั่ง seed ไปยัง production ที่มีเนื้อหาจริงโดยไม่ตรวจสอบก่อน
+
+### 3. เปิด Development Server
+
+```bash
 npm run dev
 ```
 
-จากนั้นเปิด [http://localhost:3000](http://localhost:3000) ในเบราว์เซอร์ หาก port `3000` ถูกใช้งานอยู่ Next.js จะเลือก port ถัดไปและแสดง URL จริงใน terminal
+เปิด [http://localhost:3000](http://localhost:3000) แล้วเข้า [หน้า Login](http://localhost:3000/login) ด้วย `OWNER_EMAIL` และ `ADMIN_PASSWORD` หาก port `3000` ถูกใช้งาน Next.js จะแสดง URL ใหม่ใน terminal
 
-โปรเจกต์อ่านและเขียนข้อมูลผ่าน PostgreSQL/Prisma แล้ว หลังตั้ง `DATABASE_URL` ให้รัน `npm run db:migrate` และ `npm run db:seed` ก่อนเปิดเว็บครั้งแรก
-
-### URL สำหรับตรวจสอบ
+## เส้นทางสำคัญ
 
 | ส่วน | URL | สิ่งที่ควรเห็น |
 | --- | --- | --- |
 | หน้าแรก | [http://localhost:3000](http://localhost:3000) | Hero, หมวดหมู่ และเนื้อหาล่าสุด |
-| คลังความรู้ | [http://localhost:3000/knowledge](http://localhost:3000/knowledge) | List/Card view, filter และ sample content |
+| คลังความรู้ | [http://localhost:3000/knowledge](http://localhost:3000/knowledge) | List/Card view และตัวกรอง |
 | ค้นหา | [http://localhost:3000/search](http://localhost:3000/search) | ค้นจากชื่อ เนื้อหา หมวดหมู่ และ tag |
-| หมวดหมู่ | [http://localhost:3000/categories](http://localhost:3000/categories) | รายการหมวดหมู่และจำนวนบทความ |
-| เกี่ยวกับ | [http://localhost:3000/about](http://localhost:3000/about) | หน้าแนะนำ Knowledge Hub |
-| Admin | [http://localhost:3000/admin](http://localhost:3000/admin) | Dashboard และเมนูจัดการต้นแบบ |
-| Editor | [http://localhost:3000/admin/content/new](http://localhost:3000/admin/content/new) | BlockNote editor prototype |
-| Media Library | [http://localhost:3000/admin/media](http://localhost:3000/admin/media) | อัปโหลด JPEG/PNG/WebP/GIF และจัดการ metadata |
-| AI Workspace | [http://localhost:3000/admin/ai](http://localhost:3000/admin/ai) | สร้าง ตรวจ diff และ Accept/Reject suggestion |
-| Search API | [http://localhost:3000/api/search?q=SQL](http://localhost:3000/api/search?q=SQL) | ผลการค้นหาในรูป JSON |
-| Health Check | [http://localhost:3000/api/health](http://localhost:3000/api/health) | สถานะ Application และ Database |
+| แท็ก | [http://localhost:3000/tags](http://localhost:3000/tags) | แท็กที่มีบทความ Public และหน้ารวมรายแท็ก |
+| Series | [http://localhost:3000/series](http://localhost:3000/series) | ชุดบทความ Public ที่จัดลำดับการอ่าน |
+| Collections | [http://localhost:3000/collections](http://localhost:3000/collections) | ชุดความรู้ Public ที่คัดรวมตามหัวข้อ |
+| Login | [http://localhost:3000/login](http://localhost:3000/login) | Owner login |
+| Admin | [http://localhost:3000/admin](http://localhost:3000/admin) | Dashboard |
+| Editor | [http://localhost:3000/admin/content/new](http://localhost:3000/admin/content/new) | สร้างและแก้ไขบทความ |
+| Inbox | [http://localhost:3000/admin/inbox](http://localhost:3000/admin/inbox) | Quick Capture และรายการรอจัดระเบียบ |
+| Media | [http://localhost:3000/admin/media](http://localhost:3000/admin/media) | อัปโหลดและจัดการรูปภาพ |
+| AI Workspace | [http://localhost:3000/admin/ai](http://localhost:3000/admin/ai) | Generate, Diff และ Review suggestion |
+| Settings/Backup | [http://localhost:3000/admin/settings](http://localhost:3000/admin/settings) | Site Settings, ดาวน์โหลดและ validate backup |
+| Search API | [http://localhost:3000/api/search?q=SQL](http://localhost:3000/api/search?q=SQL) | ผลค้นหารูป JSON |
+| Health Check | [http://localhost:3000/api/health](http://localhost:3000/api/health) | Application/Database status; `200` หรือ `503` |
 
-Admin บางเมนูยังเป็น placeholder แต่ Content Manager, Editor autosave, revision, publish/archive, Category/Tag/Collection management และ owner session guard เชื่อม Database แล้ว ต้องตั้ง `ADMIN_PASSWORD` และ `ADMIN_SESSION_SECRET` ก่อนเข้า `/admin`
+## Workflow สำคัญ
+
+### บันทึก เผยแพร่ และ Export
+
+Editor autosave ลง Database หลังหยุดพิมพ์ประมาณ 800 ms ควรรอข้อความ “บันทึกแล้วใน Database” ก่อนเปิด Preview, Publish หรือดาวน์โหลด Markdown/JSON การ Publish จะสร้าง revision และเปลี่ยน Private เป็น Public อัตโนมัติ ส่วน Unlisted จะคงเดิม
+
+### Revision และ Backup
+
+Revision restore จะสำรองเวอร์ชันปัจจุบันก่อนย้อนกลับเสมอ Database backup รวมข้อมูลแอป 20 กลุ่ม แต่ไม่รวม `.env`, API keys, session/rate-limit bucket และ binary media ใน object storage ขณะนี้ไฟล์ backup ทำได้เฉพาะดาวน์โหลดและ validate; การ restore ทั้งฐานข้อมูลยังไม่เปิดใช้
+
+### AI Suggestion
+
+`COMPLETED` ในรายการ AI Jobs หมายถึง provider สร้าง suggestion สำเร็จเท่านั้น ไม่ได้หมายความว่า suggestion ถูกเขียนลงบทความแล้ว ผลลัพธ์จะอยู่สถานะ `PENDING` จนกด Accept หรือ Reject
+
+AI ส่งเฉพาะ title, excerpt และ reader blocks ไปยัง OpenRouter, ใช้ structured JSON และไม่อนุญาตให้แก้ code block หากบทความถูกแก้หลัง Generate ระบบจะไม่ Accept เพื่อป้องกันการเขียนทับข้อมูลใหม่
+
+> **ข้อจำกัดที่ทราบ:** การนำ suggestion ไปใช้กับเนื้อหาใน Editor ยังอยู่ระหว่างตรวจสอบ end-to-end หลัง Accept ให้ตรวจทั้ง Editor, Preview และ Revision History ก่อนเชื่อว่าข้อความถูกเปลี่ยนแล้ว หากยังไม่เปลี่ยน ให้ copy จาก Diff ไปปรับด้วยตนเองและบันทึก revision แบบ manual
+
+## Environment Variables
+
+| ตัวแปร | จำเป็น | ใช้สำหรับ |
+| --- | --- | --- |
+| `DATABASE_URL` | ใช่ | PostgreSQL connection string สำหรับ Prisma |
+| `NEXT_PUBLIC_SITE_URL` | Production | canonical origin, metadata และ trusted-origin check; ห้ามมี path ต่อท้าย |
+| `NEXT_PUBLIC_THEME_ID` | ไม่ | fallback theme id เมื่อ Database ยังไม่มี activation; `default` หรือ `minimal` |
+| `OWNER_EMAIL` | แนะนำ | Login identifier และ Owner ที่ `db:seed` สร้าง |
+| `ADMIN_USERNAME` | ทางเลือก | fallback login identifier เมื่อไม่ใช้ `OWNER_EMAIL` |
+| `ADMIN_PASSWORD` | ใช่สำหรับ Admin | Owner password; ห้าม commit |
+| `ADMIN_SESSION_SECRET` | ใช่สำหรับ Admin | ลงลายเซ็น cookie; อย่างน้อย 32 ตัวอักษร |
+| `STORAGE_ENDPOINT` | แล้วแต่ provider | endpoint ของ S3-compatible storage เช่น Cloudflare R2 |
+| `STORAGE_REGION` | Production | storage region; R2 ใช้ `auto` |
+| `STORAGE_BUCKET` | Production | media bucket |
+| `STORAGE_ACCESS_KEY_ID` | Production | storage access key; ห้าม commit |
+| `STORAGE_SECRET_ACCESS_KEY` | Production | storage secret; ห้าม commit |
+| `STORAGE_PUBLIC_BASE_URL` | Production | public/CDN base URL ของ bucket |
+| `STORAGE_FORCE_PATH_STYLE` | ไม่ | ตั้ง `true` สำหรับ provider ที่ต้องใช้ path-style URL |
+| `MAX_UPLOAD_BYTES` | ไม่ | default 5 MiB; ระบบไม่อนุญาตเกิน 10 MiB |
+| `OPENROUTER_API_KEY` | เมื่อใช้ AI | OpenRouter API key; ห้าม commit |
+| `OPENROUTER_BASE_URL` | ไม่ | default `https://openrouter.ai/api/v1` |
+| `OPTIMIZER_MODEL` | ไม่ | model หลัก; `.env.example` ตั้ง `openai/gpt-5.6-luna-pro` |
+| `OPENROUTER_MODEL` | ไม่ | fallback model name เดิมเมื่อไม่มี `OPTIMIZER_MODEL` |
+| `AI_MAX_TOKENS` | ไม่ | output token limit; default `4096`, ช่วงที่รับ `256–32768` |
+| `AI_TIMEOUT` | ไม่ | timeout หน่วย ms; default `60000`, ช่วงที่รับ `5000–300000` |
+
+ถ้าไม่กำหนด storage credentials ใน development ระบบเขียนไฟล์ลง `public/uploads` อัตโนมัติ แต่ production บังคับให้ตั้ง S3-compatible storage ครบ
 
 ## คำสั่งที่ใช้บ่อย
 
 | คำสั่ง | หน้าที่ |
 | --- | --- |
-| `npm run dev` | เปิด development server พร้อม hot reload |
+| `npm run dev` | Development server พร้อม hot reload |
 | `npm run build` | สร้าง production build |
-| `npm start` | เปิด production server หลังจาก build แล้ว |
-| `npm run typecheck` | ตรวจ TypeScript โดยไม่สร้างไฟล์ output |
-| `npm run lint` | ตรวจรูปแบบและข้อผิดพลาดด้วย ESLint |
-| `npm test` | รัน unit tests ด้วย Vitest |
-| `npm run db:generate` | สร้าง Prisma Client จาก schema |
-| `npm run db:validate` | ตรวจความถูกต้องของ Prisma schema |
-| `npm run db:migrate` | Apply migrations ที่ยังไม่ถูกใช้กับ Database |
-| `npm run db:seed` | สร้าง Owner, หมวดหมู่ และข้อมูลเริ่มต้น |
-| `npm run db:backfill-renderer` | สร้าง HTML/plain text/heading artifacts ให้เนื้อหาเดิม |
+| `npm start` | เปิด production server หลัง build |
+| `npm run typecheck` | ตรวจ TypeScript |
+| `npm run lint` | ตรวจ ESLint |
+| `npm test` | รัน Vitest unit tests |
+| `npm run db:generate` | สร้าง Prisma Client |
+| `npm run db:validate` | ตรวจ Prisma schema |
+| `npm run db:migrate` | Apply migrations ที่ยังไม่ถูกใช้ |
+| `npm run db:seed` | สร้าง Owner และข้อมูลตัวอย่าง |
+| `npm run db:backfill-renderer` | สร้าง HTML/plain text artifacts ให้ข้อมูลเดิม |
 
-ตรวจคุณภาพทั้งหมดก่อนส่งงาน:
+ตรวจคุณภาพก่อนส่งงาน:
 
 ```bash
 npm run typecheck
@@ -66,68 +152,181 @@ npm test
 npm run build
 ```
 
-ตรวจแบบ production ผ่าน local:
+### การเพิ่ม Content Block ใหม่
 
-```bash
-npm run build
-npm start
+ชนิดและ validation ของ block อยู่ที่ `src/core/content/blocks/schema.ts` และ TypeScript type ถูก derive จาก schema นี้โดยตรง ส่วน `src/core/content/blocks/registry.ts` เป็นจุดรวมการแปลง block เป็น plain text, safe HTML และ Markdown เมื่อเพิ่ม block type ใหม่ TypeScript จะบังคับให้เพิ่ม handler ใน registry และ regression test จะตรวจว่าทุก block แสดงผลได้ครบทั้งสามรูปแบบ
+
+## ลำดับพัฒนาต่อ
+
+ลำดับนี้อิงจากช่องว่างของ implementation ปัจจุบัน ไม่ได้อิงหมายเลข Phase ใน blueprint เก่า:
+
+1. ทำ AI Accept ให้ผ่าน integration/E2E test ตั้งแต่ suggestion → content → revision → Editor/Preview
+2. เพิ่ม E2E tests สำหรับ Login, autosave, publish, restore และ media upload
+3. ทำ confirmed database restore และ import พร้อม dry-run, backup ก่อนเขียน และ audit log
+4. เพิ่ม scheduled publishing ผ่าน worker/cron ที่ทำงานซ้ำได้อย่างปลอดภัย
+5. เพิ่ม Owner-authored executable code, Formula Example, Automation Script, sample datasets และ saved structured output ตามแผนด้านล่าง
+6. เติม UI ของ Relations และ Sources รวมถึง block types ที่ยังไม่รองรับใน Editor
+7. เพิ่ม production observability, error reporting และเอกสาร deployment ตาม platform ที่เลือกจริง
+
+## แผน Executable Code และ Sample Datasets
+
+ฟีเจอร์นี้ implement แล้วเฉพาะ domain schema, validation, safe HTML/plain-text/Markdown export และ Public read-only renderer ส่วน Admin custom-block authoring, Dataset Registry และ sandbox ยังอยู่ในแผน ระบบยังคงเป็น Single-owner: Owner เท่านั้นที่สร้างหรือแก้ code block ใน Admin ผู้อ่านเห็นได้เมื่อบทความ Public แต่ไม่มี editor, playground หรือช่องส่งโค้ด/query ของตนเอง
+
+แนวทางหลักคือ **Run & Save Output**:
+
+1. Owner เขียน code และเลือก language, dialect, runtime กับ sample dataset ใน Editor
+2. Owner กด Run ใน Admin sandbox และตรวจผลลัพธ์
+3. ระบบบันทึกผลเป็น structured output เช่น Table, Text, JSON หรือ Error พร้อม runtime/dataset version
+4. Public reader แสดง code และ saved output ที่ตรวจแล้ว โดยแก้ไขหรือส่งโค้ดใหม่ไม่ได้
+5. การรันซ้ำบน Public จะไม่เปิดใน MVP แม้เป็นโค้ดที่ Owner บันทึกไว้
+
+ข้อกำหนดของ sample dataset:
+
+- แยกจาก PostgreSQL production และไม่มี credential ของระบบจริง
+- มี Dataset Registry: `id`, ชื่อ, คำอธิบาย, version, schema, data dictionary, source/license และ checksum
+- เริ่มด้วยชุด Sales, Inventory และ Employees/Supply Chain ขนาดเล็ก
+- reset ได้, deterministic และจำกัดจำนวนข้อมูล/ผลลัพธ์
+- รองรับ DuckDB/SQLite ใน Browser Worker สำหรับการรันฝั่ง Admin
+
+SQL block ต้องระบุ dialect อย่างชัดเจน:
+
+- `duckdb` หรือ `sqlite`: รันใน Admin Browser sandbox ได้
+- `tsql-compatible`: Owner เก็บ T-SQL ต้นฉบับและ query DuckDB คู่กัน โดยตรวจสอบเองทั้งสองชุด
+- `tsql`: Preview/Saved-output เท่านั้นใน MVP ไม่แปลงหรืออ้างว่ารันด้วย SQL Server
+- SQL Server sandbox จริงเป็นงานระยะหลัง เพราะต้องแยก container/microVM, read-only database, network isolation, timeout และ resource limits
+
+โครงสร้างเป้าหมาย:
+
+```ts
+type ExecutableCodeBlock = {
+  type: "executable-code";
+  language: "sql" | "javascript";
+  dialect?: "duckdb" | "sqlite" | "tsql" | "tsql-compatible";
+  executionMode: "admin-sandbox" | "saved-output" | "preview-only";
+  datasetId?: string;
+  datasetVersion?: string;
+  code: string;
+  compatibleCode?: string;
+  output?: {
+    type: "table" | "text" | "json" | "error";
+    columns?: string[];
+    rows?: unknown[][];
+    value?: string;
+    truncated?: boolean;
+  };
+  executedAt?: string;
+};
 ```
 
-แล้วเปิด [http://localhost:3000](http://localhost:3000) เช่นเดียวกับ development mode
+มาตรการขั้นต่ำ: Web Worker/sandboxed iframe, ปิด network, timeout 2–5 วินาที, จำกัด memory/output, SQL row limit, terminate worker เมื่อ timeout, sanitize output และห้ามเข้าถึง `.env`, production database หรือ Private content
 
-## Environment Variables
+## แผน Formula และ Automation Script
 
-คัดลอก `.env.example` เป็น `.env` ก่อนเริ่มพัฒนา และห้าม commit ไฟล์ `.env` ที่มี secret จริง
+ฟีเจอร์นี้มี domain schema, validation, export และ Public read-only renderer แล้ว แต่ยังไม่มี Admin custom-block authoring เป็นสื่อการเรียนรู้แบบ **Owner-authored + Saved Output** ไม่เชื่อม API ของ Power BI, Microsoft 365 หรือ Google Workspace และไม่เปิดให้ Public รันหรือแก้ไข
 
-| ตัวแปร | ใช้สำหรับ | สถานะใน Prototype |
-| --- | --- | --- |
-| `DATABASE_URL` | PostgreSQL connection string สำหรับ Prisma | จำเป็นสำหรับ Public และ Admin |
-| `NEXT_PUBLIC_SITE_URL` | base URL สำหรับ metadata, robots และ sitemap | ใช้แล้ว; local ใช้ `http://localhost:3000` |
-| `OWNER_EMAIL` | อีเมลเจ้าของระบบและชื่อผู้ใช้หน้า Login | แนะนำ; ใช้ `ADMIN_USERNAME` แทนได้ระหว่างย้ายระบบ |
-| `ADMIN_USERNAME` | ชื่อผู้ใช้เดิมจาก CuttlePlus | ใช้เป็น fallback เมื่อไม่มี `OWNER_EMAIL` |
-| `ADMIN_PASSWORD` | รหัสผ่าน Owner | จำเป็นสำหรับ Admin; ห้าม commit |
-| `ADMIN_SESSION_SECRET` | ใช้ลงลายเซ็น session cookie; อย่างน้อย 32 ตัวอักษร | จำเป็นสำหรับ Admin; ห้าม commit |
-| `STORAGE_ENDPOINT` | S3-compatible endpoint เช่น Cloudflare R2 | จำเป็นเมื่อ provider ไม่ใช่ AWS S3 |
-| `STORAGE_REGION` | Region ของ S3; R2 ใช้ `auto` | จำเป็นใน Production |
-| `STORAGE_BUCKET` | Bucket สำหรับไฟล์ Media | จำเป็นใน Production |
-| `STORAGE_ACCESS_KEY_ID` | Access key ของ object storage | จำเป็นใน Production; ห้าม commit |
-| `STORAGE_SECRET_ACCESS_KEY` | Secret key ของ object storage | จำเป็นใน Production; ห้าม commit |
-| `STORAGE_PUBLIC_BASE_URL` | Public/CDN base URL ของ bucket | จำเป็นใน Production |
-| `MAX_UPLOAD_BYTES` | ขนาด upload สูงสุด; default 5 MB และระบบ cap ที่ 10 MB | ไม่บังคับ |
-| `OPENROUTER_API_KEY` | API key สำหรับ AI suggestion | จำเป็นเมื่อใช้ AI; ห้าม commit |
-| `OPENROUTER_BASE_URL` | OpenRouter API base URL | default `https://openrouter.ai/api/v1` |
-| `OPTIMIZER_MODEL` | model slug สำหรับ suggestion | default `openai/gpt-5.6-luna`; รองรับ `OPENROUTER_MODEL` เดิมเป็น fallback |
-| `AI_MAX_TOKENS` | จำนวน output tokens สูงสุด | default `4096` |
-| `AI_TEMPERATURE` | ระดับความสุ่มของคำตอบ (0-2) | default `0.2` |
-| `AI_TIMEOUT` | timeout ของ provider หน่วยมิลลิวินาที | default `60000` |
+### Formula Example Block
 
-## โครงสร้างโปรเจกต์ปัจจุบัน
+ใช้กับ DAX, Power Query M, Excel Formula และ Google Sheets Formula โดยแสดงสูตร, context, input table, saved output, compatibility และคำอธิบายแทน Screenshot
+
+```ts
+type FormulaExampleBlock = {
+  type: "formula-example";
+  engine: "dax" | "power-query-m" | "excel" | "google-sheets";
+  artifactType?: "measure" | "calculated-column" | "calculated-table" | "query" | "cell-formula" | "array-formula";
+  title: string;
+  expression: string;
+  prerequisites: string[];
+  compatibility: string[];
+  locale?: string;
+  input?: StructuredExample;
+  output?: StructuredOutput;
+  executionMode: "saved-output" | "preview-only";
+  verifiedAt?: string;
+};
+```
+
+ข้อกำหนดเฉพาะ:
+
+- DAX ระบุ Measure/Calculated Column/Table, data model, relationships และ filter/row context
+- Power Query M แสดง `let ... in`, data-source description, Applied Steps, input schema และ output preview โดยไม่มี credential
+- Excel/Google Sheets แสดงตารางจำลองที่มี cell references, locale, argument separator, named ranges และ compatibility badge
+- ถ้าสูตร Excel กับ Google Sheets ต่างกัน ให้ Owner สร้างสูตรแยกหรือแสดงเป็น tabs ห้ามแปลงแล้วอ้างว่าเหมือนกัน 100%
+
+### Automation Script Block
+
+ใช้กับ Excel/Word/Outlook VBA และ Google Apps Script เป็น Preview/Saved-output เท่านั้น ไม่มี VBA runtime, OAuth, Apps Script Execution API หรือการเข้าถึงไฟล์/บริการจริง
+
+```ts
+type AutomationScriptBlock = {
+  type: "automation-script";
+  platform: "excel-vba" | "word-vba" | "outlook-vba" | "google-apps-script";
+  title: string;
+  code: string;
+  entryPoint?: string;
+  hostRequirements: string[];
+  permissions?: string[];
+  triggers?: string[];
+  input?: StructuredExample;
+  output?: StructuredOutput;
+  executionMode: "saved-output" | "preview-only";
+  verifiedAt?: string;
+};
+```
+
+VBA ต้องระบุ host, module/procedure, workbook/sheet requirements, references และ Windows/Mac compatibility ส่วน Google Apps Script ต้องระบุ bound/standalone project, entry function, services, scopes, triggers และ quota warning โดยห้ามเผย OAuth token, credential, private file ID หรือข้อมูลจริงจาก Gmail/Drive
+
+Public renderer ของทั้งสอง block แสดง syntax-highlighted source, Copy, badges, prerequisites, structured input/output และคำอธิบายเท่านั้น ไม่มี Run, Edit หรือ Playground
+
+## Production Checklist
+
+1. ใช้ PostgreSQL และ S3-compatible storage ที่สำรองข้อมูลได้
+2. ตั้ง `NEXT_PUBLIC_SITE_URL` เป็น HTTPS origin จริงและตั้ง secret ทุกตัวผ่านระบบของ platform
+3. รัน `npm ci`, `npm run db:migrate` และ `npm run build`; ไม่รัน `db:seed` อัตโนมัติบนข้อมูลจริง
+4. เปิดแอปด้วย `npm start` และตรวจ `/api/health`
+5. ทดสอบ Login, autosave, Preview, Publish, media upload และ backup download
+6. ตรวจ AI Accept ด้วย Editor/Preview/Revision ก่อนใช้กับเนื้อหาสำคัญ
+7. สำรอง PostgreSQL และ object storage แยกจาก JSON backup ของแอป
+
+## แก้ปัญหาเบื้องต้น
+
+| อาการ | จุดที่ควรตรวจ |
+| --- | --- |
+| Login ไม่ผ่าน | `OWNER_EMAIL`/`ADMIN_USERNAME`, `ADMIN_PASSWORD`, secret ยาวอย่างน้อย 32 ตัว และมี Owner ใน Database |
+| Admin เด้งกลับ Login | session อายุ 8 ชั่วโมง, cookie/HTTPS และ `OWNER_EMAIL` ต้องตรงกับ User ที่ seed ไว้ |
+| Autosave ขึ้น Untrusted origin | `NEXT_PUBLIC_SITE_URL`, reverse-proxy host และ `x-forwarded-proto` |
+| หน้า Public ไม่พบบทความ | ต้องเป็น `PUBLISHED` และ `PUBLIC`; `UNLISTED` เปิดได้จาก URL ตรงเท่านั้น |
+| Media upload ใช้ไม่ได้ใน production | ตั้ง storage variables ให้ครบและตรวจ bucket/CORS/public base URL |
+| AI สร้างไม่ได้ | API key, credits, model, `AI_TIMEOUT` และ error ใน “งานล่าสุด” |
+| AI ขึ้น Completed แต่บทความไม่เปลี่ยน | Completed เป็นสถานะ Generate; ตรวจว่า Accept แล้วและดู Revision/Preview ตามข้อจำกัดด้านบน |
+| Health Check คืน `503` | ตรวจ `DATABASE_URL`, network allowlist และ migration |
+
+## โครงสร้างโปรเจกต์
 
 ```text
 .
-├── docs/                       # Architecture, technical spike และ theme contract
-├── prisma/
-│   └── schema.prisma           # Target database schema
+├── docs/                  # Architecture, technical decisions และ theme contract
+├── prisma/                # Schema, migrations, seed และ backfill scripts
 ├── src/
-│   ├── app/                    # Next.js App Router: public, admin และ API routes
-│   ├── components/             # Admin, public reader และ editor UI
-│   ├── core/
-│   │   ├── content/            # Domain types, slug policy และ repository contract
-│   │   └── themes/             # Theme contracts ที่แยกจาก business logic
-│   ├── lib/                    # Sample data สำหรับ prototype
-│   └── themes/                 # Theme implementations และ registry
-├── tests/                      # Unit tests ของ domain rules
-├── .env.example                # ตัวอย่าง environment variables
-├── next.config.ts              # Next.js configuration
-├── package.json                # Scripts และ dependencies
-└── vitest.config.ts            # Test configuration
+│   ├── app/               # Next.js App Router: public, admin และ APIs
+│   ├── components/        # Editor, admin และ public UI
+│   ├── core/              # Content, AI, backup, media, settings และ theme contracts
+│   ├── lib/               # Auth, Prisma, security, rate limit และ sample data
+│   └── themes/            # Clarity/Notebook implementations และ registry
+├── tests/                 # Domain unit tests
+├── .env.example
+├── next.config.ts
+└── package.json
 ```
 
 เอกสารที่เกี่ยวข้อง:
 
-- [Architecture](docs/architecture.md) — ขอบเขต implementation และลำดับพัฒนาถัดไป
-- [Technical Spike](docs/technical-spike.md) — ผลทดลองและการตัดสินใจเชิงเทคนิค
-- [Theme Contract](docs/theme-contract.md) — ขอบเขตและสัญญาระหว่าง Core กับ Theme
+- [Architecture](docs/architecture.md) — implementation boundaries และลำดับพัฒนาถัดไป
+- [Implementation Gap Report](docs/implementation-gap.md) — สิ่งที่มีจริง ช่องว่าง และลำดับแนะนำเทียบกับ blueprint
+- [Master Development Checklist](docs/next-development-checklist.md) — งานค้างทั้งหมดจาก implementation ปัจจุบันและ blueprint พร้อมลำดับเริ่มทำต่อ
+- [Technical Spike](docs/technical-spike.md) — การทดลองและการตัดสินใจเริ่มต้น
+- [Theme Contract](docs/theme-contract.md) — สัญญาระหว่าง Core กับ Public Theme
+
+ส่วน “แผนพัฒนา” ด้านล่างเป็น product blueprint ตั้งต้น ไม่ใช่รายการฟีเจอร์ที่เสร็จแล้ว ให้ยึดตารางสถานะด้านบนและ [Architecture](docs/architecture.md) เป็นสถานะ implementation ปัจจุบัน
 
 ---
 
@@ -855,6 +1054,16 @@ Theme สามารถเปลี่ยนการจัดวางหน�
 - Highlight Lines
 - Diff Block ในอนาคต
 - Result / Output Block
+- Owner-authored Executable Code Block
+- Run & Save Output ใน Admin เท่านั้น
+- Public read-only: ไม่มี code editor หรือ playground
+- Sample Dataset selector และ dataset version
+- SQL dialect badge: DuckDB, SQLite, T-SQL หรือ T-SQL Compatible
+- Structured output: Table, Text, JSON และ Error
+- T-SQL Preview/Saved-output; ห้ามรันด้วย dialect อื่นอย่างเงียบ ๆ
+- Formula Example: DAX, Power Query M, Excel และ Google Sheets
+- Automation Script: VBA และ Google Apps Script
+- Formula/Automation ใช้ Preview หรือ Saved Output เท่านั้น ไม่มี external API
 
 ภาษาที่ควรเตรียม:
 
@@ -3007,6 +3216,10 @@ MVP Production ควรประกอบด้วย:
 - Structured Article Metadata
 - Export Markdown/JSON
 - Database Backup
+- Owner-authored Code พร้อม Saved Output
+- Sample Dataset สำหรับ DuckDB/SQLite
+- Formula Example พร้อม Saved Output สำหรับ DAX/M/Excel/Google Sheets
+- Automation Script Example สำหรับ VBA/Google Apps Script
 
 ไม่ควรรอ Semantic Search หรือ Knowledge Map ก่อนเปิดใช้ เพราะคุณค่าหลักเกิดขึ้นได้จากการเขียน อ่าน และค้นหาแบบปกติแล้ว
 
@@ -3124,6 +3337,34 @@ MVP Production ควรประกอบด้วย:
 - H08 Performance
 - H09 Accessibility
 - H10 Security Review
+
+## Epic I — Executable Examples
+
+- I01 Dataset Registry และ versioned sample datasets
+- I02 Executable Code custom block schema
+- I03 DuckDB/SQLite Admin Browser Worker
+- I04 JavaScript Admin Web Worker
+- I05 Run & Save Structured Output
+- I06 Public read-only code/output renderer
+- I07 SQL dialect และ execution-mode badges
+- I08 T-SQL Preview-only และ compatible-query pairing
+- I09 Timeout, row/output limits และ worker termination
+- I10 Dataset/output export และ deterministic regression tests
+- I11 SQL Server isolated sandbox feasibility study ระยะหลัง
+
+## Epic J — Formula and Automation Learning Blocks
+
+- J01 Formula Example custom block schema
+- J02 DAX context/model metadata และ saved output renderer
+- J03 Power Query M steps/schema/output renderer
+- J04 Excel/Google Sheets sample-grid และ compatibility tabs
+- J05 Automation Script custom block schema
+- J06 VBA host/module/requirements metadata
+- J07 Google Apps Script services/scopes/triggers metadata
+- J08 Shared structured input/output renderer
+- J09 Public read-only Copy, accessibility และ responsive states
+- J10 Export/import compatibility และ regression tests
+- J11 Privacy validation ป้องกัน token, credential และ private identifiers
 
 ---
 
