@@ -24,33 +24,35 @@
 
 ### 1. พิสูจน์และแก้ AI Accept end-to-end
 
-- [ ] สร้าง test database หรือ isolated test fixture ที่ไม่แตะข้อมูลใช้งานจริง
-- [ ] สร้างบทความ Draft พร้อม title, excerpt และ reader/editor blocks
-- [ ] สร้าง AI suggestion แบบ deterministic โดยไม่เรียก provider จริง
-- [ ] เรียก Accept ผ่าน action/API เดียวกับหน้า Admin
-- [ ] ยืนยันว่า `Content` ถูกอัปเดตจริง
-- [ ] ยืนยันว่ามี `ContentRevision` ก่อนเปลี่ยนข้อมูล
-- [ ] ยืนยันว่า suggestion เปลี่ยนเป็น `ACCEPTED` เฉพาะเมื่อ transaction สำเร็จ
-- [ ] โหลดข้อมูลกลับมาใหม่และยืนยันว่า Editor แสดงข้อความใหม่
-- [ ] ยืนยันว่า Preview/Public artifact แสดงข้อความใหม่
-- [ ] เพิ่มกรณี content ถูกแก้หลัง Generate แล้ว Accept ต้องถูกปฏิเสธ
-- [ ] เพิ่มกรณี transaction ล้มเหลวแล้ว Content/suggestion ต้องไม่ค้างครึ่งทาง
-- [ ] แก้ root cause หาก test ข้อใดไม่ผ่าน
+- [x] สร้าง test database หรือ isolated test fixture ที่ไม่แตะข้อมูลใช้งานจริง
+- [x] สร้างบทความ Draft พร้อม title, excerpt และ reader/editor blocks
+- [x] สร้าง AI suggestion แบบ deterministic โดยไม่เรียก provider จริง
+- [x] เรียก Accept ผ่าน action/API เดียวกับหน้า Admin
+- [x] ยืนยันว่า `Content` ถูกอัปเดตจริง
+- [x] ยืนยันว่ามี `ContentRevision` ก่อนเปลี่ยนข้อมูล
+- [x] ยืนยันว่า suggestion เปลี่ยนเป็น `ACCEPTED` เฉพาะเมื่อ transaction สำเร็จ
+- [x] โหลดข้อมูลกลับมาใหม่และยืนยันว่า Editor แสดงข้อความใหม่
+- [x] ยืนยันว่า Preview/Public artifact แสดงข้อความใหม่
+- [x] เพิ่มกรณี content ถูกแก้หลัง Generate แล้ว Accept ต้องถูกปฏิเสธ
+- [x] เพิ่มกรณี transaction ล้มเหลวแล้ว Content/suggestion ต้องไม่ค้างครึ่งทาง
+- [x] แก้ root cause หาก test ข้อใดไม่ผ่าน
 
 เกณฑ์เสร็จ: test เดียวต้องพิสูจน์เส้นทาง `suggestion → Accept → revision → Content → Editor/Preview` และอาการ “Accept แล้วข้อความไม่เปลี่ยน” ต้องทำซ้ำไม่ได้
 
 ### 2. วาง integration/E2E test foundation
 
-- [ ] เลือก test runner สำหรับ browser E2E และบันทึกเหตุผลในเอกสาร architecture
-- [ ] เพิ่มคำสั่ง `test:integration` และ `test:e2e` แยกจาก unit tests
-- [ ] สร้าง environment/test database reset ที่รันซ้ำได้
-- [ ] ป้องกัน test suite เชื่อมต่อ production database
-- [ ] ทำ fixture สำหรับ Owner login และ sample content
-- [ ] เพิ่ม critical smoke test: Login → Create → Autosave → Publish → Public reader
-- [ ] เพิ่ม test Revision restore
-- [ ] เพิ่ม test Media upload โดยใช้ temporary/local storage
+- [x] เลือก test runner สำหรับ browser E2E และบันทึกเหตุผลในเอกสาร architecture
+- [x] เพิ่มคำสั่ง `test:integration` และ `test:e2e` แยกจาก unit tests
+- [x] สร้าง environment/test database reset ที่รันซ้ำได้
+- [x] ป้องกัน test suite เชื่อมต่อ production database
+- [x] ทำ fixture สำหรับ Owner login และ sample content
+- [x] เพิ่ม critical smoke test: Login → Create → Autosave → Publish → Public reader
+- [x] เพิ่ม test Revision restore
+- [x] เพิ่ม test Media upload โดยใช้ temporary/local storage
 
 เกณฑ์เสร็จ: test รันซ้ำได้โดยไม่พึ่งข้อมูลเดิม ไม่เรียก AI จริง และไม่เขียน production storage
+
+ผลตรวจรับ 4 สิงหาคม 2026: Vitest integration 3/3 และ Playwright E2E 4/4 ผ่านบน PostgreSQL database แยกชื่อ `knowledge_hub_test`
 
 ## งานถัดไป — ความปลอดภัยของข้อมูล
 
@@ -101,35 +103,37 @@
 
 ### 6. Admin authoring สำหรับ Learning Blocks
 
-- [ ] สร้าง BlockNote custom block สำหรับ Executable Code
-- [ ] สร้าง Formula Example block สำหรับ DAX, Power Query M, Excel และ Google Sheets
-- [ ] สร้าง Automation Script block สำหรับ VBA และ Google Apps Script
-- [ ] ทำ editor fields สำหรับ dialect/engine/platform และ execution mode
-- [ ] ทำ structured input/output editor แบบ Table, Text, JSON และ Error
-- [ ] เพิ่ม compatibility, prerequisites, host requirements, permissions/triggers และ verified date
-- [ ] รักษา block metadata เมื่อ save/reload และเมื่อ AI suggestion ทำงาน
-- [ ] เพิ่ม Copy, responsive table และ accessibility ใน Public reader
-- [ ] เพิ่ม export/import regression tests
-- [ ] เพิ่ม privacy validation ป้องกัน token, credential และ private identifiers
+- [x] สร้าง BlockNote custom block สำหรับ Executable Code
+- [x] สร้าง Formula Example block สำหรับ DAX, Power Query M, Excel และ Google Sheets
+- [x] สร้าง Automation Script block สำหรับ VBA และ Google Apps Script
+- [x] ทำ editor fields สำหรับ dialect/engine/platform และ execution mode
+- [x] ทำ structured input/output editor แบบ Table, Text, JSON และ Error
+- [x] เพิ่ม compatibility, prerequisites, host requirements, permissions/triggers และ verified date
+- [x] รักษา block metadata เมื่อ save/reload และเมื่อ AI suggestion ทำงาน
+- [x] เพิ่ม Copy, responsive table และ accessibility ใน Public reader
+- [x] เพิ่ม export/import regression tests
+- [x] เพิ่ม privacy validation ป้องกัน token, credential และ private identifiers
 
 เกณฑ์เสร็จ: Owner สร้างและแก้ทั้งสาม block จาก Admin ได้ ส่วน Public อ่าน/Copy saved output ได้แต่ไม่มี Edit, Run หรือ Playground
 
 ### 7. Dataset Registry และ SQL sandbox
 
-- [ ] ออกแบบ Dataset Registry: id, version, schema, dictionary, license และ checksum
-- [ ] เพิ่ม sample datasets แบบ deterministic: Sales, Inventory และ Employees/Supply Chain
-- [ ] แยก dataset ออกจาก production database และทำ reset ได้
-- [ ] เพิ่ม DuckDB/SQLite Browser Worker เฉพาะ Admin
-- [ ] ปิด network และจำกัด timeout, memory, row count และ output size
-- [ ] terminate worker เมื่อ timeout
-- [ ] ทำ Run → Review → Save Structured Output
-- [ ] แสดง dataset/runtime version และ executed time
-- [ ] เพิ่ม deterministic regression tests ของ query/output
-- [ ] รองรับ `tsql` แบบ Preview/Saved-output เท่านั้น
-- [ ] รองรับ `tsql-compatible` ด้วย original query และ DuckDB-compatible query ที่ Owner ตรวจเอง
-- [ ] ไม่รวม SQL Server execution จริงใน MVP
+- [x] ออกแบบ Dataset Registry: id, version, schema, dictionary, license และ checksum
+- [x] เพิ่ม sample datasets แบบ deterministic: Sales, Inventory และ Employees/Supply Chain
+- [x] แยก dataset ออกจาก production database และทำ reset ได้
+- [x] เพิ่ม DuckDB/SQLite Browser Worker เฉพาะ Admin
+- [x] ปิด network และจำกัด timeout, memory, row count และ output size
+- [x] terminate worker เมื่อ timeout
+- [x] ทำ Run → Review → Save Structured Output
+- [x] แสดง dataset/runtime version และ executed time
+- [x] เพิ่ม deterministic regression tests ของ query/output
+- [x] รองรับ `tsql` แบบ Preview/Saved-output เท่านั้น
+- [x] รองรับ `tsql-compatible` ด้วย original query และ DuckDB-compatible query ที่ Owner ตรวจเอง
+- [x] ไม่รวม SQL Server execution จริงใน MVP
 
 เกณฑ์เสร็จ: Owner รันเฉพาะ DuckDB/SQLite ใน sandbox และบันทึกผลได้ โดย Public เห็นเพียง source กับผลที่บันทึกแล้ว
+
+ผลตรวจรับ 4 สิงหาคม 2026: DuckDB-Wasm และ SQLite/sql.js Run → Review → Save → reload → Preview ผ่าน Playwright E2E; Formula/Automation native block, metadata และ structured output ผ่าน E2E เช่นกัน
 
 ## งานถัดไป — Operations
 

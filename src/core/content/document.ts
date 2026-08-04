@@ -3,6 +3,8 @@ import { blockToPlainText, blockToSafeHtml } from "./blocks/registry";
 import { contentBlockSchema } from "./blocks/schema";
 import { createSlug } from "./slug";
 import type { ContentBlock } from "./types";
+import type { LearningBlock } from "./learning-blocks";
+import { nativeLearningBlockType } from "./learning-blocks";
 
 export { contentBlockSchema, structuredOutputSchema } from "./blocks/schema";
 
@@ -46,6 +48,37 @@ export function parseStoredDocument(value: unknown): StoredContentDocument {
 type EditorInline = { type?: string; text?: string };
 type EditorBlock = { id?: string; type?: string; props?: Record<string, unknown>; content?: EditorInline[] | string; children?: EditorBlock[] };
 
+function learningBlockFromEditor(block: EditorBlock): LearningBlock | null {
+  if (block.type !== "executableCode" && block.type !== "formulaExample" && block.type !== "automationScript") return null;
+  if (typeof block.props?.data !== "string") return null;
+  try {
+    const parsed = contentBlockSchema.safeParse(JSON.parse(block.props.data));
+    if (parsed.success && (parsed.data.type === "executable-code" || parsed.data.type === "formula-example" || parsed.data.type === "automation-script")) return parsed.data;
+  } catch {}
+  return null;
+}
+
+export function learningBlocksFromEditorBlocks(value: unknown[]): LearningBlock[] {
+  return value.flatMap((raw) => {
+    const block = learningBlockFromEditor(raw as EditorBlock);
+    return block ? [block] : [];
+  });
+}
+
+export function learningBlockToEditorBlock(block: LearningBlock) {
+  return { id: block.id, type: nativeLearningBlockType(block.type), props: { data: JSON.stringify(block) }, children: [] };
+}
+
+export function mergeLearningBlocksIntoEditorBlocks(editorBlocks: unknown[], readerBlocks: ContentBlock[]) {
+  const learningBlocks = readerBlocks.filter((block): block is LearningBlock => block.type === "executable-code" || block.type === "formula-example" || block.type === "automation-script");
+  const learningIds = new Set(learningBlocks.map((block) => block.id));
+  const withoutLegacyRepresentations = editorBlocks.filter((raw) => {
+    const block = raw as EditorBlock;
+    return !learningBlockFromEditor(block) && (!block.id || !learningIds.has(block.id));
+  });
+  return [...withoutLegacyRepresentations, ...learningBlocks.map(learningBlockToEditorBlock)];
+}
+
 function editorText(block: EditorBlock): string {
   if (typeof block.content === "string") return block.content;
   return (block.content ?? []).map((item) => item.text ?? "").join("");
@@ -62,6 +95,12 @@ export function editorBlocksToReaderBlocks(value: unknown[]): ContentBlock[] {
 
   for (const raw of value) {
     const block = raw as EditorBlock;
+    const learningBlock = learningBlockFromEditor(block);
+    if (learningBlock) {
+      flushList();
+      result.push(learningBlock);
+      continue;
+    }
     const id = block.id ?? `block-${result.length}`;
     const text = editorText(block);
 
@@ -110,13 +149,11 @@ export function blocksToSafeHtml(blocks: ContentBlock[]): string {
 }
 
 export function readerBlocksToEditorBlocks(blocks: ContentBlock[]): unknown[] {
-  return blocks.flatMap((block) => {
+  return blocks.flatMap<unknown>((block) => {
     if (block.type === "heading") return [{ id: block.id, type: "heading", props: { level: block.level }, content: [{ type: "text", text: block.text, styles: {} }], children: [] }];
     if (block.type === "code") return [{ id: block.id, type: "codeBlock", props: { language: block.language }, content: [{ type: "text", text: block.code, styles: {} }], children: [] }];
     if (block.type === "list") return block.items.map((item, index) => ({ id: `${block.id}-${index}`, type: "bulletListItem", content: [{ type: "text", text: item, styles: {} }], children: [] }));
-    if (block.type === "executable-code") return [{ id: block.id, type: "codeBlock", props: { language: block.language }, content: [{ type: "text", text: block.code, styles: {} }], children: [] }];
-    if (block.type === "formula-example") return [{ id: block.id, type: "codeBlock", props: { language: block.engine }, content: [{ type: "text", text: block.expression, styles: {} }], children: [] }];
-    if (block.type === "automation-script") return [{ id: block.id, type: "codeBlock", props: { language: block.platform === "google-apps-script" ? "javascript" : "vb" }, content: [{ type: "text", text: block.code, styles: {} }], children: [] }];
+    if (block.type === "executable-code" || block.type === "formula-example" || block.type === "automation-script") return [learningBlockToEditorBlock(block)];
     const text = block.type === "callout" || block.type === "toggle" ? `${block.title}: ${block.text}` : block.text;
     return [{ id: block.id, type: "paragraph", content: [{ type: "text", text, styles: {} }], children: [] }];
   });

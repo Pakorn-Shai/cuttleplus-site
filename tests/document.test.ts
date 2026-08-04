@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { blockToMarkdown, blockToPlainText, blockToSafeHtml } from "@/core/content/blocks/registry";
-import { blocksToSafeHtml, buildContentArtifacts, contentBlockSchema } from "@/core/content/document";
+import { blocksToSafeHtml, buildContentArtifacts, contentBlockSchema, editorBlocksToReaderBlocks, mergeLearningBlocksIntoEditorBlocks, readerBlocksToEditorBlocks } from "@/core/content/document";
 import type { ContentBlock } from "@/core/content/types";
 
 describe("content rendering pipeline", () => {
@@ -42,12 +42,14 @@ describe("content rendering pipeline", () => {
       prerequisites: ["ช่วงข้อมูล B2:B10"],
       compatibility: ["Excel 365", "Google Sheets"],
       executionMode: "saved-output",
+      input: { type: "table", columns: ["B"], rows: [[100], [1490]] },
       output: { type: "table", columns: ["Result"], rows: [[1590]] },
     });
     const artifacts = buildContentArtifacts([formula]);
 
     expect(artifacts.html).toContain("learning-example");
     expect(artifacts.html).toContain("<td>1590</td>");
+    expect(artifacts.html).toContain("<h4>Input</h4>");
     expect(artifacts.html).not.toContain("<script>");
     expect(artifacts.plainText).toContain("=SUM(B2:B10)");
     expect(artifacts.plainText).toContain("1590");
@@ -65,6 +67,53 @@ describe("content rendering pipeline", () => {
       output: { type: "table", columns: ["value"], rows: Array.from({ length: 501 }, () => [1]) },
     });
     expect(parsed.success).toBe(false);
+  });
+
+  it("preserves executable runtime and dataset metadata in the stored reader block", () => {
+    const block = contentBlockSchema.parse({
+      id: "duckdb-1",
+      type: "executable-code",
+      language: "sql",
+      dialect: "duckdb",
+      executionMode: "saved-output",
+      datasetId: "sales",
+      datasetVersion: "1.0.0",
+      datasetChecksum: "sha256:abc",
+      runtimeVersion: "1.5.4",
+      code: "SELECT 1 AS value",
+      output: { type: "table", columns: ["value"], rows: [[1]] },
+      executedAt: "2026-08-04T12:00:00.000Z",
+    });
+    expect(block).toMatchObject({ datasetId: "sales", datasetVersion: "1.0.0", runtimeVersion: "1.5.4" });
+    expect(blockToMarkdown(block)).toContain("SELECT 1 AS value");
+  });
+
+  it("round-trips native BlockNote learning blocks without flattening metadata", () => {
+    const source: ContentBlock[] = [{
+      id: "native-sql",
+      type: "executable-code",
+      language: "sql",
+      dialect: "sqlite",
+      executionMode: "saved-output",
+      datasetId: "inventory",
+      datasetVersion: "1.0.0",
+      datasetChecksum: "sha256:test",
+      runtimeVersion: "sql.js-1.14.1",
+      code: "SELECT * FROM inventory_items",
+      output: { type: "table", columns: ["sku"], rows: [["A-100"]] },
+      executedAt: "2026-08-04T12:00:00.000Z",
+    }];
+    const editorBlocks = readerBlocksToEditorBlocks(source) as Array<{ type: string; props: { data: string } }>;
+    expect(editorBlocks[0].type).toBe("executableCode");
+    expect(JSON.parse(editorBlocks[0].props.data)).toEqual(source[0]);
+    expect(editorBlocksToReaderBlocks(editorBlocks)).toEqual(source);
+  });
+
+  it("migrates a flattened legacy code representation to a native learning block", () => {
+    const learning: ContentBlock = { id: "legacy", type: "formula-example", engine: "dax", title: "Total", expression: "SUM(Sales[Amount])", prerequisites: [], compatibility: ["Power BI"], executionMode: "preview-only" };
+    const merged = mergeLearningBlocksIntoEditorBlocks([{ id: "legacy", type: "codeBlock", props: { language: "dax" }, content: [] }], [learning]) as Array<{ type: string }>;
+    expect(merged).toHaveLength(1);
+    expect(merged[0].type).toBe("formulaExample");
   });
 
   it("routes every supported block type through the shared registry", () => {
