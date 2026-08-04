@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import { saveEditorDraft } from "@/core/content/editor-service";
+import { contentBlockSchema } from "@/core/content/document";
 import { getOwnerSession } from "@/lib/auth";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { hasTrustedOrigin } from "@/lib/request-security";
@@ -17,6 +18,7 @@ const draftSchema = z.object({
   visibility: z.enum(["private", "unlisted", "public"]),
   contentType: z.enum(["QUICK_NOTE", "KNOWLEDGE_NOTE", "TUTORIAL", "ARTICLE", "CODE_SNIPPET", "TROUBLESHOOTING", "CHEAT_SHEET", "REFERENCE", "LEARNING_LOG", "PROJECT_NOTE", "CASE_STUDY", "CHECKLIST"]),
   editorBlocks: z.array(z.unknown()).max(2000),
+  learningBlocks: z.array(contentBlockSchema).max(100).refine((blocks) => blocks.every((block) => block.type === "executable-code" || block.type === "formula-example" || block.type === "automation-script"), "Only learning blocks are allowed").default([]),
   createRevision: z.boolean().optional(),
 });
 
@@ -48,6 +50,7 @@ export async function POST(request: Request) {
     return NextResponse.json(saved);
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_SLUG") return NextResponse.json({ error: "Slug is required" }, { status: 400 });
+    if (error instanceof Error && error.message === "SENSITIVE_LEARNING_BLOCK") return NextResponse.json({ error: "Sensitive data detected in learning block" }, { status: 400 });
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
     console.error("Unable to save content draft", error);
     return NextResponse.json({ error: "Unable to save draft" }, { status: 500 });

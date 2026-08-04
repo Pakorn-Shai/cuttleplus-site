@@ -63,17 +63,45 @@ export async function reviewSuggestion(input: { suggestionId: string; decision: 
     const stored = parseStoredDocument(suggestion.content.contentJson);
     const blocks = applyReadabilitySuggestion(stored.readerBlocks, proposed.data);
     const artifacts = buildContentArtifacts(blocks);
-    const document = createStoredDocument(artifacts.blocks, readerBlocksToEditorBlocks(artifacts.blocks)) as unknown as Prisma.InputJsonValue;
+    const document = createStoredDocument(artifacts.blocks, readerBlocksToEditorBlocks(artifacts.blocks.filter((block) => block.type !== "executable-code" && block.type !== "formula-example" && block.type !== "automation-script"))) as unknown as Prisma.InputJsonValue;
     const latest = await tx.contentRevision.aggregate({ where: { contentId: suggestion.contentId }, _max: { revisionNumber: true } });
-    const content = await tx.content.update({ where: { id: suggestion.contentId }, data: {
-      title: proposed.data.title, excerpt: proposed.data.excerpt, contentJson: document, contentHtml: artifacts.html, plainText: artifacts.plainText,
-      readingTime: Math.max(1, Math.ceil(artifacts.plainText.split(/\s+/u).filter(Boolean).length / 200)),
+    // Preserve the exact state that is about to be replaced. Creating the
+    // revision first also makes an accepted suggestion reversible even when
+    // this is the content's first revision.
+    const previousRevision = await tx.contentRevision.create({ data: {
+      contentId: suggestion.content.id,
+      revisionNumber: (latest._max.revisionNumber ?? 0) + 1,
+      title: suggestion.content.title,
+      excerpt: suggestion.content.excerpt,
+      contentJson: suggestion.content.contentJson as Prisma.InputJsonValue,
+      contentHtml: suggestion.content.contentHtml,
+      plainText: suggestion.content.plainText,
+      createdById: input.userId,
+      source: "AI",
+      reason: `Before accepting AI suggestion ${suggestion.id}`,
     } });
-    await tx.contentRevision.create({ data: {
-      contentId: content.id, revisionNumber: (latest._max.revisionNumber ?? 0) + 1, title: content.title, excerpt: content.excerpt,
-      contentJson: document, contentHtml: artifacts.html, plainText: artifacts.plainText, createdById: input.userId, source: "AI", reason: `Accepted AI suggestion ${suggestion.id}`,
-    } });
-    await tx.aISuggestion.update({ where: { id: suggestion.id }, data: { status: "ACCEPTED", reviewedAt: new Date() } });
+
+    // Avoid overwriting an autosave that lands after the snapshot check. A
+    // concurrent edit changes updatedAt, so this write fails and rolls back
+    // the pre-change revision together with the rest of the transaction.
+    const updated = await tx.content.updateMany({
+      where: { id: suggestion.contentId, updatedAt: suggestion.content.updatedAt },
+      data: {
+        title: proposed.data.title,
+        excerpt: proposed.data.excerpt,
+        contentJson: document,
+        contentHtml: artifacts.html,
+        plainText: artifacts.plainText,
+        readingTime: Math.max(1, Math.ceil(artifacts.plainText.split(/\s+/u).filter(Boolean).length / 200)),
+      },
+    });
+    if (updated.count !== 1) throw new Error("CONTENT_CHANGED");
+    const content = await tx.content.findUniqueOrThrow({ where: { id: suggestion.contentId } });
+
+    await tx.aISuggestion.update({
+      where: { id: suggestion.id },
+      data: { status: "ACCEPTED", reviewedAt: new Date(), revisionId: previousRevision.id },
+    });
     await tx.auditLog.create({ data: { userId: input.userId, action: "AI_SUGGESTION_ACCEPTED", entityType: "AISuggestion", entityId: suggestion.id } });
     return { contentId: content.id, slug: content.slug };
   });

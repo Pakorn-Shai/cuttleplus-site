@@ -58,11 +58,29 @@ export function ArticleReader({ blocks }: { blocks: ContentBlock[] }) {
             const source = block.type === "formula-example" ? block.expression : block.code;
             const label = block.type === "formula-example" ? block.engine : block.type === "automation-script" ? block.platform : block.dialect ?? block.language;
             const title = block.type === "executable-code" ? "ตัวอย่างโค้ด" : block.title;
-            const metadata = block.type === "formula-example" ? [...block.compatibility, ...block.prerequisites] : block.type === "automation-script" ? block.hostRequirements : [block.datasetId, block.datasetVersion].filter(Boolean) as string[];
+            const metadata = block.type === "formula-example" ? [
+              block.artifactType && `Artifact: ${block.artifactType}`,
+              block.locale && `Locale: ${block.locale}`,
+              ...block.compatibility.map((item) => `Compatibility: ${item}`),
+              ...block.prerequisites.map((item) => `Prerequisite: ${item}`),
+              block.verifiedAt && `Verified: ${new Date(block.verifiedAt).toLocaleString("th-TH")}`,
+            ].filter(Boolean) as string[] : block.type === "automation-script" ? [
+              block.entryPoint && `Entry point: ${block.entryPoint}`,
+              ...block.hostRequirements.map((item) => `Host: ${item}`),
+              ...(block.permissions ?? []).map((item) => `Permission: ${item}`),
+              ...(block.triggers ?? []).map((item) => `Trigger: ${item}`),
+              block.verifiedAt && `Verified: ${new Date(block.verifiedAt).toLocaleString("th-TH")}`,
+            ].filter(Boolean) as string[] : [
+              block.datasetId && `Dataset: ${block.datasetId}`,
+              block.datasetVersion && `Dataset version: ${block.datasetVersion}`,
+              block.runtimeVersion && `Runtime: ${block.runtimeVersion}`,
+              block.executedAt && `Executed: ${new Date(block.executedAt).toLocaleString("th-TH")}`,
+            ].filter(Boolean) as string[];
             return <section className="learning-example-block" key={block.id}>
               <header><div><span className="pill">{label}</span><strong>{title}</strong></div><span className="learning-readonly">Saved example · Read only</span></header>
-              <div className="code-block"><div className="code-head"><span>{label}</span><button className="copy-code" onClick={() => copyCode(block.id, source)}>{copied === block.id ? <><Check size={13} /> คัดลอกแล้ว</> : <><Copy size={13} /> คัดลอก</>}</button></div><pre><code>{source}</code></pre></div>
+              <div className="code-block"><div className="code-head"><span>{label}</span><button className="copy-code" aria-live="polite" onClick={() => copyCode(block.id, source)}>{copied === block.id ? <><Check size={13} /> คัดลอกแล้ว</> : <><Copy size={13} /> คัดลอก</>}</button></div><pre><code>{source}</code></pre></div>
               {metadata.length > 0 && <ul className="learning-example-meta">{metadata.map((item) => <li key={item}>{item}</li>)}</ul>}
+              {(block.type === "formula-example" || block.type === "automation-script") && block.input && <StructuredOutputDisplay output={block.input} label="Input" />}
               {block.output && <StructuredOutputDisplay output={block.output} />}
             </section>;
           }
@@ -73,7 +91,7 @@ export function ArticleReader({ blocks }: { blocks: ContentBlock[] }) {
   );
 }
 
-function StructuredOutputDisplay({ output }: { output: StructuredOutput }) {
-  if (output.type !== "table") return <div className={`learning-output ${output.type}`}><header>Saved output</header><pre>{output.value}</pre></div>;
-  return <div className="learning-output table"><header>Saved output</header><div className="learning-output-table"><table><thead><tr>{output.columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{output.rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((value, columnIndex) => <td key={columnIndex}>{value === null ? <span className="muted">NULL</span> : String(value)}</td>)}</tr>)}</tbody></table></div>{output.truncated && <small>ผลลัพธ์ถูกจำกัดจำนวนแถว</small>}</div>;
+function StructuredOutputDisplay({ output, label = "Saved output" }: { output: StructuredOutput; label?: string }) {
+  if (output.type !== "table") return <div className={`learning-output ${output.type}`}><header>{label}</header><pre>{output.value}</pre></div>;
+  return <div className="learning-output table"><header>{label}</header><div className="learning-output-table" role="region" aria-label={`${label} แบบตาราง`} tabIndex={0}><table><thead><tr>{output.columns.map((column) => <th scope="col" key={column}>{column}</th>)}</tr></thead><tbody>{output.rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((value, columnIndex) => <td key={columnIndex}>{value === null ? <span className="muted">NULL</span> : String(value)}</td>)}</tr>)}</tbody></table></div>{output.truncated && <small>ผลลัพธ์ถูกจำกัดจำนวนแถว</small>}</div>;
 }

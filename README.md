@@ -17,9 +17,9 @@
 | Media Library | ใช้งานได้ | Local storage ใน development; S3-compatible storage ใน production |
 | Theme และ Site Settings | ใช้งานได้ | มี Clarity (`default`) และ Notebook (`minimal`) |
 | Database backup | บางส่วน | ดาวน์โหลดและ validate ได้ แต่ยังไม่มี confirmed restore/import |
-| OpenRouter AI suggestion | บางส่วน | Generate และ Diff Review ใช้ได้; ดูข้อจำกัด AI ด้านล่าง |
-| Learning example blocks | บางส่วน | Schema, validation, export และ Public read-only renderer พร้อมแล้ว; Admin authoring/sandbox/datasets ยังไม่ทำ |
-| Scheduled publishing, semantic search และ E2E tests | ยังไม่ทำ | อยู่ในลำดับพัฒนาถัดไป |
+| OpenRouter AI suggestion | ใช้งานได้ระดับ MVP | Generate, Diff Review และ atomic Accept/Reject ผ่าน integration/E2E tests |
+| Learning example blocks | ใช้งานได้ | Native BlockNote blocks, DuckDB/SQLite Run/Review/Save, Formula/Automation authoring, structured input/output, export และ Public renderer พร้อม |
+| Scheduled publishing และ semantic search | ยังไม่ทำ | E2E foundation และ critical browser flows ทำแล้ว |
 
 ## เริ่มใช้งานบน Local
 
@@ -97,7 +97,7 @@ Revision restore จะสำรองเวอร์ชันปัจจุบ
 
 AI ส่งเฉพาะ title, excerpt และ reader blocks ไปยัง OpenRouter, ใช้ structured JSON และไม่อนุญาตให้แก้ code block หากบทความถูกแก้หลัง Generate ระบบจะไม่ Accept เพื่อป้องกันการเขียนทับข้อมูลใหม่
 
-> **ข้อจำกัดที่ทราบ:** การนำ suggestion ไปใช้กับเนื้อหาใน Editor ยังอยู่ระหว่างตรวจสอบ end-to-end หลัง Accept ให้ตรวจทั้ง Editor, Preview และ Revision History ก่อนเชื่อว่าข้อความถูกเปลี่ยนแล้ว หากยังไม่เปลี่ยน ให้ copy จาก Diff ไปปรับด้วยตนเองและบันทึก revision แบบ manual
+AI Accept ผ่าน integration และ browser E2E ตั้งแต่ suggestion → Server Action → revision เดิม → Content → Editor/Preview แล้ว ระบบปฏิเสธ suggestion เมื่อบทความถูกแก้หลัง Generate และ rollback ทั้ง transaction เมื่อมีขั้นตอนใดล้มเหลว
 
 ## Environment Variables
 
@@ -137,6 +137,8 @@ AI ส่งเฉพาะ title, excerpt และ reader blocks ไปยั�
 | `npm run typecheck` | ตรวจ TypeScript |
 | `npm run lint` | ตรวจ ESLint |
 | `npm test` | รัน Vitest unit tests |
+| `npm run test:integration` | รัน Vitest กับ PostgreSQL test database แยก |
+| `npm run test:e2e` | รัน Playwright critical browser flows |
 | `npm run db:generate` | สร้าง Prisma Client |
 | `npm run db:validate` | ตรวจ Prisma schema |
 | `npm run db:migrate` | Apply migrations ที่ยังไม่ถูกใช้ |
@@ -149,8 +151,12 @@ AI ส่งเฉพาะ title, excerpt และ reader blocks ไปยั�
 npm run typecheck
 npm run lint
 npm test
+npm run test:integration
+npm run test:e2e
 npm run build
 ```
+
+integration/E2E ต้องมี `.env.test` ที่สร้างจาก `.env.test.example` และ `TEST_DATABASE_URL` ต้องชี้ PostgreSQL database ที่แยกจากข้อมูลใช้งานจริง โดยชื่อ database ต้องมีคำว่า `test`; test harness จะปฏิเสธ URL อื่นอัตโนมัติ
 
 ### การเพิ่ม Content Block ใหม่
 
@@ -160,17 +166,15 @@ npm run build
 
 ลำดับนี้อิงจากช่องว่างของ implementation ปัจจุบัน ไม่ได้อิงหมายเลข Phase ใน blueprint เก่า:
 
-1. ทำ AI Accept ให้ผ่าน integration/E2E test ตั้งแต่ suggestion → content → revision → Editor/Preview
-2. เพิ่ม E2E tests สำหรับ Login, autosave, publish, restore และ media upload
-3. ทำ confirmed database restore และ import พร้อม dry-run, backup ก่อนเขียน และ audit log
-4. เพิ่ม scheduled publishing ผ่าน worker/cron ที่ทำงานซ้ำได้อย่างปลอดภัย
-5. เพิ่ม Owner-authored executable code, Formula Example, Automation Script, sample datasets และ saved structured output ตามแผนด้านล่าง
-6. เติม UI ของ Relations และ Sources รวมถึง block types ที่ยังไม่รองรับใน Editor
-7. เพิ่ม production observability, error reporting และเอกสาร deployment ตาม platform ที่เลือกจริง
+1. ทำ confirmed database restore และ import พร้อม dry-run, backup ก่อนเขียน และ audit log
+2. เพิ่ม scheduled publishing ผ่าน worker/cron ที่ทำงานซ้ำได้อย่างปลอดภัย
+3. เติม Relations/Sources และ block types ทั่วไปที่ยังไม่มี authoring UI ครบ
+4. เติม UI ของ Relations และ Sources รวมถึง block types ที่ยังไม่รองรับใน Editor
+5. เพิ่ม production observability, error reporting และเอกสาร deployment ตาม platform ที่เลือกจริง
 
 ## แผน Executable Code และ Sample Datasets
 
-ฟีเจอร์นี้ implement แล้วเฉพาะ domain schema, validation, safe HTML/plain-text/Markdown export และ Public read-only renderer ส่วน Admin custom-block authoring, Dataset Registry และ sandbox ยังอยู่ในแผน ระบบยังคงเป็น Single-owner: Owner เท่านั้นที่สร้างหรือแก้ code block ใน Admin ผู้อ่านเห็นได้เมื่อบทความ Public แต่ไม่มี editor, playground หรือช่องส่งโค้ด/query ของตนเอง
+ฟีเจอร์นี้มี native BlockNote custom blocks, schema validation, safe HTML/plain-text/Markdown/JSON export, Public read-only renderer, deterministic Dataset Registry และ Admin DuckDB-Wasm/sql.js authoring แบบ Run → Review → Save แล้ว ระบบยังคงเป็น Single-owner: Owner เท่านั้นที่สร้างหรือแก้และรัน code ใน Admin ผู้อ่านเห็นได้เมื่อบทความ Public แต่ไม่มี editor, playground หรือช่องส่งโค้ด/query ของตนเอง
 
 แนวทางหลักคือ **Run & Save Output**:
 
@@ -186,7 +190,7 @@ npm run build
 - มี Dataset Registry: `id`, ชื่อ, คำอธิบาย, version, schema, data dictionary, source/license และ checksum
 - เริ่มด้วยชุด Sales, Inventory และ Employees/Supply Chain ขนาดเล็ก
 - reset ได้, deterministic และจำกัดจำนวนข้อมูล/ผลลัพธ์
-- รองรับ DuckDB/SQLite ใน Browser Worker สำหรับการรันฝั่ง Admin
+- รองรับ DuckDB และ SQLite (sql.js) ใน Browser Worker สำหรับการรันฝั่ง Admin
 
 SQL block ต้องระบุ dialect อย่างชัดเจน:
 
@@ -220,9 +224,11 @@ type ExecutableCodeBlock = {
 
 มาตรการขั้นต่ำ: Web Worker/sandboxed iframe, ปิด network, timeout 2–5 วินาที, จำกัด memory/output, SQL row limit, terminate worker เมื่อ timeout, sanitize output และห้ามเข้าถึง `.env`, production database หรือ Private content
 
+implementation ปัจจุบัน self-host DuckDB และ sql.js worker/WASM เป็น static assets ผ่าน `postinstall`/`prebuild` จึง deploy บน Vercel ได้โดยไม่มี persistent process ฝั่ง server Dataset จะถูกสร้างใหม่ใน browser ทุกครั้ง จำกัด DuckDB memory 128 MB, timeout 4 วินาที, 200 rows และ 50 columns และปิด external access ก่อนรัน query ของ Owner
+
 ## แผน Formula และ Automation Script
 
-ฟีเจอร์นี้มี domain schema, validation, export และ Public read-only renderer แล้ว แต่ยังไม่มี Admin custom-block authoring เป็นสื่อการเรียนรู้แบบ **Owner-authored + Saved Output** ไม่เชื่อม API ของ Power BI, Microsoft 365 หรือ Google Workspace และไม่เปิดให้ Public รันหรือแก้ไข
+ฟีเจอร์นี้มี native custom-block authoring, domain schema, validation, structured input/output editor, export และ Public read-only renderer เป็นสื่อการเรียนรู้แบบ **Owner-authored + Saved Output** ไม่เชื่อม API ของ Power BI, Microsoft 365 หรือ Google Workspace และไม่เปิดให้ Public รันหรือแก้ไข
 
 ### Formula Example Block
 

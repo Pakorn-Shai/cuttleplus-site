@@ -2,15 +2,23 @@
 
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
-import type { PartialBlock } from "@blocknote/core";
+import { BlockNoteSchema, type PartialBlock } from "@blocknote/core";
+import { filterSuggestionItems, insertOrUpdateBlockForSlashMenu } from "@blocknote/core/extensions";
 import { BlockNoteView } from "@blocknote/mantine";
-import { useCreateBlockNote } from "@blocknote/react";
-import { ArrowLeft, Check, Download, Eye, History, Sparkles } from "lucide-react";
+import { getDefaultReactSlashMenuItems, SuggestionMenuController, useCreateBlockNote } from "@blocknote/react";
+import { ArrowLeft, Braces, Check, Database, Download, Eye, History, Sparkles, Workflow } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import type { EditorContentType, EditorDraft, EditorTaxonomyOptions } from "@/core/content/editor-service";
+import type { EditorContentType, EditorDraft, EditorTaxonomyOptions, LearningBlock } from "@/core/content/editor-service";
+import { learningBlockToEditorBlock, learningBlocksFromEditorBlocks } from "@/core/content/document";
+import { createLearningBlock } from "@/core/content/learning-blocks";
+import { ExecutableCodeAuthoring } from "./executable-code-authoring";
+import { knowledgeEditorBlockSpecs } from "./learning-block-specs";
+import { LearningBlockAuthoring } from "./learning-block-authoring";
+
+const editorSchema = BlockNoteSchema.create({ blockSpecs: knowledgeEditorBlockSpecs });
 
 const contentTypeLabels: Record<EditorContentType, string> = {
   QUICK_NOTE: "Quick Note",
@@ -36,7 +44,7 @@ const initialContent = [
 
 export function KnowledgeEditor({ initialDraft, taxonomy }: { initialDraft?: EditorDraft; taxonomy: EditorTaxonomyOptions }) {
   const router = useRouter();
-  const editor = useCreateBlockNote({ initialContent: (initialDraft?.editorBlocks as PartialBlock[]) ?? initialContent });
+  const editor = useCreateBlockNote({ schema: editorSchema, initialContent: ((initialDraft?.editorBlocks as PartialBlock[]) ?? initialContent) as never });
   const [status, setStatus] = useState<"unsaved" | "saved" | "saving" | "error">(initialDraft ? "saved" : "unsaved");
   const [errorMessage, setErrorMessage] = useState("");
   const [contentId, setContentId] = useState(initialDraft?.id);
@@ -47,10 +55,11 @@ export function KnowledgeEditor({ initialDraft, taxonomy }: { initialDraft?: Edi
   const [tags, setTags] = useState(initialDraft?.tags.join(", ") ?? "");
   const [visibility, setVisibility] = useState<EditorDraft["visibility"]>(initialDraft?.visibility ?? "private");
   const [contentType, setContentType] = useState<EditorContentType>(initialDraft?.contentType ?? "KNOWLEDGE_NOTE");
+  const [learningBlocks, setLearningBlocks] = useState<LearningBlock[]>(initialDraft?.learningBlocks ?? []);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saving = useRef(false);
-  const stateRef = useRef({ contentId, title, slug, excerpt, categorySlug, tags, visibility, contentType });
-  stateRef.current = { contentId, title, slug, excerpt, categorySlug, tags, visibility, contentType };
+  const stateRef = useRef({ contentId, title, slug, excerpt, categorySlug, tags, visibility, contentType, learningBlocks });
+  stateRef.current = { contentId, title, slug, excerpt, categorySlug, tags, visibility, contentType, learningBlocks };
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
@@ -62,6 +71,36 @@ export function KnowledgeEditor({ initialDraft, taxonomy }: { initialDraft?: Edi
     setStatus("saving");
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => void persistDraft(false), 800);
+  }
+
+  function applyLearningBlocks(next: LearningBlock[]) {
+    const nextById = new Map(next.map((block) => [block.id, block]));
+    const nativeBlocks = editor.document.filter((block) => block.type === "executableCode" || block.type === "formulaExample" || block.type === "automationScript");
+    const existingIds = new Set<string>();
+    for (const nativeBlock of nativeBlocks) {
+      const parsed = learningBlocksFromEditorBlocks([nativeBlock]);
+      const current = parsed[0];
+      const replacement = current ? nextById.get(current.id) : undefined;
+      if (replacement) {
+        existingIds.add(replacement.id);
+        editor.updateBlock(nativeBlock, { props: { data: JSON.stringify(replacement) } } as never);
+      } else {
+        editor.removeBlocks([nativeBlock]);
+      }
+    }
+    const additions = next.filter((block) => !existingIds.has(block.id)).map(learningBlockToEditorBlock);
+    if (additions.length) editor.insertBlocks(additions as never, editor.document.at(-1)!, "after");
+    stateRef.current.learningBlocks = next;
+    setLearningBlocks(next);
+    scheduleSave();
+  }
+
+  function learningSlashItems() {
+    return [
+      { title: "Executable SQL", subtext: "Run with DuckDB or SQLite and save reviewed output", aliases: ["sql", "duckdb", "sqlite"], group: "Learning Examples", icon: <Database size={18} />, onItemClick: () => insertOrUpdateBlockForSlashMenu(editor, learningBlockToEditorBlock(createLearningBlock("executable-code")) as never) },
+      { title: "Formula Example", subtext: "DAX, Power Query M, Excel, or Google Sheets", aliases: ["formula", "dax", "excel"], group: "Learning Examples", icon: <Braces size={18} />, onItemClick: () => insertOrUpdateBlockForSlashMenu(editor, learningBlockToEditorBlock(createLearningBlock("formula-example")) as never) },
+      { title: "Automation Script", subtext: "VBA or Google Apps Script with saved output", aliases: ["vba", "apps script", "automation"], group: "Learning Examples", icon: <Workflow size={18} />, onItemClick: () => insertOrUpdateBlockForSlashMenu(editor, learningBlockToEditorBlock(createLearningBlock("automation-script")) as never) },
+    ];
   }
 
   async function persistDraft(createRevision: boolean) {
@@ -88,13 +127,14 @@ export function KnowledgeEditor({ initialDraft, taxonomy }: { initialDraft?: Edi
           visibility: current.visibility,
           contentType: current.contentType,
           editorBlocks: editor.document,
+          learningBlocks: current.learningBlocks,
           createRevision,
         }),
       });
       if (response.status === 401) { window.location.href = "/login"; return; }
       if (!response.ok) {
         const payload = await response.json().catch(() => null) as { error?: string } | null;
-        setErrorMessage(payload?.error === "Slug already exists" ? "Slug นี้ถูกใช้งานแล้ว กรุณาเปลี่ยน slug" : payload?.error === "Untrusted origin" ? "โดเมน Preview ยังไม่ได้รับอนุญาต กรุณาตรวจ Environment Variables" : "บันทึกไม่สำเร็จ กรุณาลองใหม่");
+        setErrorMessage(payload?.error === "Slug already exists" ? "Slug นี้ถูกใช้งานแล้ว กรุณาเปลี่ยน slug" : payload?.error === "Untrusted origin" ? "โดเมน Preview ยังไม่ได้รับอนุญาต กรุณาตรวจ Environment Variables" : payload?.error === "Sensitive data detected in learning block" ? "พบ credential, secret หรือ private network identifier ใน Learning Block กรุณานำออกก่อนบันทึก" : "บันทึกไม่สำเร็จ กรุณาลองใหม่");
         setStatus("error");
         return;
       }
@@ -125,7 +165,9 @@ export function KnowledgeEditor({ initialDraft, taxonomy }: { initialDraft?: Edi
       <section>
         <input className="editor-title" value={title} onChange={(event) => { setTitle(event.target.value); scheduleSave(); }} aria-label="ชื่อเนื้อหา" />
         <div className="editor-properties"><span className="editor-property">สถานะ: {initialDraft?.contentStatus ?? "ยังไม่สร้าง"}</span><span className="editor-property">Visibility: {visibility}</span><span className="editor-property">ประเภท: {contentTypeLabels[contentType]}</span></div>
-        <div className="blocknote-shell"><BlockNoteView editor={editor} theme="light" onChange={scheduleSave} /></div>
+        <div className="blocknote-shell"><BlockNoteView editor={editor} theme="light" slashMenu={false} onChange={() => { const next = learningBlocksFromEditorBlocks(editor.document); stateRef.current.learningBlocks = next; setLearningBlocks(next); scheduleSave(); }}><SuggestionMenuController triggerCharacter="/" getItems={async (query) => filterSuggestionItems([...getDefaultReactSlashMenuItems(editor), ...learningSlashItems()], query)} /></BlockNoteView></div>
+        <ExecutableCodeAuthoring blocks={learningBlocks.filter((block): block is Extract<LearningBlock, { type: "executable-code" }> => block.type === "executable-code")} onChange={(blocks) => applyLearningBlocks([...learningBlocks.filter((block) => block.type !== "executable-code"), ...blocks])} />
+        <LearningBlockAuthoring blocks={learningBlocks.filter((block): block is Extract<LearningBlock, { type: "formula-example" | "automation-script" }> => block.type === "formula-example" || block.type === "automation-script")} onChange={(blocks) => applyLearningBlocks([...learningBlocks.filter((block) => block.type === "executable-code"), ...blocks])} />
       </section>
       <aside className="editor-aside">
         <h3>ข้อมูลเนื้อหา</h3>

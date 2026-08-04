@@ -2,8 +2,12 @@ import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { buildContentArtifacts, createStoredDocument, editorBlocksToReaderBlocks, parseStoredDocument, readerBlocksToEditorBlocks } from "./document";
+import { buildContentArtifacts, createStoredDocument, editorBlocksToReaderBlocks, mergeLearningBlocksIntoEditorBlocks, parseStoredDocument, readerBlocksToEditorBlocks } from "./document";
 import { createSlug } from "./slug";
+import type { ContentBlock } from "./types";
+import type { LearningBlock } from "./learning-blocks";
+import { assertLearningBlocksArePublicSafe } from "./learning-privacy";
+export type { LearningBlock } from "./learning-blocks";
 
 export interface EditorDraft {
   id?: string;
@@ -16,6 +20,7 @@ export interface EditorDraft {
   contentType: EditorContentType;
   contentStatus: string;
   editorBlocks: unknown[];
+  learningBlocks: LearningBlock[];
 }
 
 export type EditorContentType = "QUICK_NOTE" | "KNOWLEDGE_NOTE" | "TUTORIAL" | "ARTICLE" | "CODE_SNIPPET" | "TROUBLESHOOTING" | "CHEAT_SHEET" | "REFERENCE" | "LEARNING_LOG" | "PROJECT_NOTE" | "CASE_STUDY" | "CHECKLIST";
@@ -113,14 +118,19 @@ export async function getEditorDraft(id: string): Promise<EditorDraft | null> {
     visibility: content.visibility.toLowerCase() as EditorDraft["visibility"],
     contentType: content.contentType,
     contentStatus: content.status.toLowerCase(),
-    editorBlocks: document.editorBlocks?.length ? document.editorBlocks : readerBlocksToEditorBlocks(document.readerBlocks),
+    editorBlocks: mergeLearningBlocksIntoEditorBlocks(document.editorBlocks?.length ? document.editorBlocks : readerBlocksToEditorBlocks(document.readerBlocks.filter((block) => !isLearningBlock(block))), document.readerBlocks),
+    learningBlocks: document.readerBlocks.filter(isLearningBlock),
   };
 }
 
 export async function saveEditorDraft(input: SaveEditorDraftInput, userId?: string) {
   const requestedSlug = createSlug(input.slug || input.title);
   if (!requestedSlug) throw new Error("INVALID_SLUG");
-  const artifacts = buildContentArtifacts(editorBlocksToReaderBlocks(input.editorBlocks));
+  const converted = editorBlocksToReaderBlocks(input.editorBlocks);
+  const convertedLearningIds = new Set(converted.filter(isLearningBlock).map((block) => block.id));
+  const blocks = [...converted, ...input.learningBlocks.filter((block) => !convertedLearningIds.has(block.id))];
+  assertLearningBlocksArePublicSafe(blocks.filter(isLearningBlock));
+  const artifacts = buildContentArtifacts(blocks);
   const plainText = artifacts.plainText;
   const document = createStoredDocument(artifacts.blocks, input.editorBlocks) as unknown as Prisma.InputJsonValue;
   const category = input.categorySlug ? await prisma.category.findUnique({ where: { slug: input.categorySlug } }) : null;
@@ -177,6 +187,10 @@ export async function saveEditorDraft(input: SaveEditorDraftInput, userId?: stri
     await tx.auditLog.create({ data: { userId, action: input.id ? "CONTENT_UPDATED" : "CONTENT_CREATED", entityType: "Content", entityId: content.id } });
     return { id: content.id, slug: content.slug, updatedAt: content.updatedAt.toISOString() };
   });
+}
+
+function isLearningBlock(block: ContentBlock): block is LearningBlock {
+  return block.type === "executable-code" || block.type === "formula-example" || block.type === "automation-script";
 }
 
 export async function createQuickCapture(input: QuickCaptureInput, userId: string) {

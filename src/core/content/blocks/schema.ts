@@ -18,18 +18,19 @@ export const contentBlockSchema = z.discriminatedUnion("type", [
     id: z.string(), type: z.literal("executable-code"), language: z.enum(["sql", "javascript"]),
     dialect: z.enum(["duckdb", "sqlite", "tsql", "tsql-compatible"]).optional(),
     executionMode: z.enum(["admin-sandbox", "saved-output", "preview-only"]), code: z.string().max(200_000), compatibleCode: z.string().max(200_000).optional(),
-    datasetId: z.string().max(160).optional(), datasetVersion: z.string().max(80).optional(), output: structuredOutputSchema.optional(), executedAt: z.string().datetime().optional(),
+    datasetId: z.string().max(160).optional(), datasetVersion: z.string().max(80).optional(), datasetChecksum: z.string().max(100).optional(), runtimeVersion: z.string().max(80).optional(),
+    output: structuredOutputSchema.optional(), executedAt: z.string().datetime().optional(),
   }),
   z.object({
     id: z.string(), type: z.literal("formula-example"), engine: z.enum(["dax", "power-query-m", "excel", "google-sheets"]),
     artifactType: z.enum(["measure", "calculated-column", "calculated-table", "query", "cell-formula", "array-formula"]).optional(),
     title: z.string().max(240), expression: z.string().max(200_000), prerequisites: z.array(z.string().max(500)).max(50), compatibility: z.array(z.string().max(200)).max(30), locale: z.string().max(40).optional(),
-    output: structuredOutputSchema.optional(), executionMode: z.enum(["saved-output", "preview-only"]), verifiedAt: z.string().datetime().optional(),
+    input: structuredOutputSchema.optional(), output: structuredOutputSchema.optional(), executionMode: z.enum(["saved-output", "preview-only"]), verifiedAt: z.string().datetime().optional(),
   }),
   z.object({
     id: z.string(), type: z.literal("automation-script"), platform: z.enum(["excel-vba", "word-vba", "outlook-vba", "google-apps-script"]),
     title: z.string().max(240), code: z.string().max(200_000), entryPoint: z.string().max(240).optional(), hostRequirements: z.array(z.string().max(500)).max(50),
-    permissions: z.array(z.string().max(500)).max(50).optional(), triggers: z.array(z.string().max(500)).max(50).optional(), output: structuredOutputSchema.optional(),
+    permissions: z.array(z.string().max(500)).max(50).optional(), triggers: z.array(z.string().max(500)).max(50).optional(), input: structuredOutputSchema.optional(), output: structuredOutputSchema.optional(),
     executionMode: z.enum(["saved-output", "preview-only"]), verifiedAt: z.string().datetime().optional(),
   }),
 ]);

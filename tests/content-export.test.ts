@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { blocksToMarkdown, contentToJson, contentToMarkdown, type ExportableContent } from "@/core/content/export";
+import { contentBlockSchema } from "@/core/content/document";
 
 const content: ExportableContent = {
   id: "content-1",
@@ -51,7 +52,7 @@ describe("content export", () => {
       {
         id: "dax-1", type: "formula-example", engine: "dax", artifactType: "measure", title: "Total Sales",
         expression: "Total Sales = SUM(Sales[Amount])", prerequisites: ["Sales table"], compatibility: ["Power BI"],
-        executionMode: "saved-output", output: { type: "table", columns: ["Region", "Total"], rows: [["North", 125400]] },
+        executionMode: "saved-output", input: { type: "table", columns: ["Region", "Amount"], rows: [["North", 125400]] }, output: { type: "table", columns: ["Region", "Total"], rows: [["North", 125400]] },
       },
       {
         id: "vba-1", type: "automation-script", platform: "excel-vba", title: "Summarize Sales", code: "Sub Run()\nEnd Sub",
@@ -59,7 +60,19 @@ describe("content export", () => {
       },
     ]);
     expect(markdown).toContain("Total Sales = SUM(Sales[Amount])");
+    expect(markdown).toContain("**Input (table)**");
     expect(markdown).toContain("| North | 125400 |");
     expect(markdown).toContain("Summary!E2 = 125400");
+  });
+
+  it("round-trips every learning block through the versioned JSON export schema", () => {
+    const blocks = [
+      { id: "sql", type: "executable-code", language: "sql", dialect: "sqlite", executionMode: "saved-output", datasetId: "sales", datasetVersion: "1.0.0", code: "SELECT 1", output: { type: "table", columns: ["value"], rows: [[1]] } },
+      { id: "formula", type: "formula-example", engine: "google-sheets", title: "Total", expression: "=SUM(A:A)", prerequisites: [], compatibility: ["Google Sheets"], executionMode: "saved-output", output: { type: "text", value: "42" } },
+      { id: "automation", type: "automation-script", platform: "google-apps-script", title: "Run", code: "function run() {}", hostRequirements: [], permissions: [], triggers: ["manual"], executionMode: "preview-only", input: { type: "json", value: "{\"dryRun\":true}" } },
+    ] as const;
+    const exported = JSON.parse(contentToJson({ ...content, blocks: blocks as unknown as ExportableContent["blocks"] }, new Date("2026-08-04T00:00:00.000Z")));
+    expect(exported.content.blocks).toEqual(blocks);
+    expect(exported.content.blocks.map((block: unknown) => contentBlockSchema.parse(block))).toEqual(blocks);
   });
 });

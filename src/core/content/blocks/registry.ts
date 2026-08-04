@@ -61,18 +61,18 @@ const blockRegistry: Record<ContentBlock["type"], RuntimeBlockDefinition> = {
   }),
   "executable-code": defineBlock<Extract<ContentBlock, { type: "executable-code" }>>({
     plainText: (block) => `${block.code}\n${outputPlainText(block.output)}`,
-    safeHtml: (block) => learningBlockHtml({ label: block.dialect ?? block.language, title: "Executable example", code: block.code, output: block.output }),
-    markdown: (block) => learningBlockMarkdown("Executable example", block.dialect ?? block.language, block.code, block.output),
+    safeHtml: (block) => learningBlockHtml({ label: block.dialect ?? block.language, title: "Executable example", code: block.code, output: block.output, metadata: executableMetadata(block) }),
+    markdown: (block) => learningBlockMarkdown("Executable example", block.dialect ?? block.language, block.code, block.output, executableMetadata(block)),
   }),
   "formula-example": defineBlock<Extract<ContentBlock, { type: "formula-example" }>>({
-    plainText: (block) => `${block.title}\n${block.expression}\n${block.prerequisites.join(" ")}\n${outputPlainText(block.output)}`,
-    safeHtml: (block) => learningBlockHtml({ label: block.engine, title: block.title, code: block.expression, output: block.output, metadata: [...block.compatibility, ...block.prerequisites] }),
-    markdown: (block) => learningBlockMarkdown(block.title, block.engine, block.expression, block.output),
+    plainText: (block) => `${block.title}\n${block.expression}\n${block.prerequisites.join(" ")}\n${outputPlainText(block.input)}\n${outputPlainText(block.output)}`,
+    safeHtml: (block) => learningBlockHtml({ label: block.engine, title: block.title, code: block.expression, input: block.input, output: block.output, metadata: formulaMetadata(block) }),
+    markdown: (block) => learningBlockMarkdown(block.title, block.engine, block.expression, block.output, formulaMetadata(block), block.input),
   }),
   "automation-script": defineBlock<Extract<ContentBlock, { type: "automation-script" }>>({
-    plainText: (block) => `${block.title}\n${block.code}\n${block.hostRequirements.join(" ")}\n${outputPlainText(block.output)}`,
-    safeHtml: (block) => learningBlockHtml({ label: block.platform, title: block.title, code: block.code, output: block.output, metadata: block.hostRequirements }),
-    markdown: (block) => learningBlockMarkdown(block.title, block.platform, block.code, block.output),
+    plainText: (block) => `${block.title}\n${block.code}\n${block.hostRequirements.join(" ")}\n${outputPlainText(block.input)}\n${outputPlainText(block.output)}`,
+    safeHtml: (block) => learningBlockHtml({ label: block.platform, title: block.title, code: block.code, input: block.input, output: block.output, metadata: automationMetadata(block) }),
+    markdown: (block) => learningBlockMarkdown(block.title, block.platform, block.code, block.output, automationMetadata(block), block.input),
   }),
 };
 
@@ -94,16 +94,31 @@ function outputPlainText(output?: StructuredOutput) {
   return [output.columns.join("\t"), ...output.rows.map((row) => row.map((value) => value === null ? "NULL" : String(value)).join("\t"))].join("\n");
 }
 
-function learningBlockHtml(input: { label: string; title: string; code: string; output?: StructuredOutput; metadata?: string[] }) {
+function learningBlockHtml(input: { label: string; title: string; code: string; input?: StructuredOutput; output?: StructuredOutput; metadata?: string[] }) {
   const metadata = input.metadata?.length ? `<ul>${input.metadata.map((item) => `<li>${escapeText(item)}</li>`).join("")}</ul>` : "";
-  return `<section class="learning-example"><header><span>${escapeText(input.label)}</span><strong>${escapeText(input.title)}</strong></header><pre><code>${escapeHtml(input.code)}</code></pre>${metadata}${outputSafeHtml(input.output)}</section>`;
+  const structuredInput = input.input ? `<h4>Input</h4>${outputSafeHtml(input.input)}` : "";
+  return `<section class="learning-example"><header><span>${escapeText(input.label)}</span><strong>${escapeText(input.title)}</strong></header><pre><code>${escapeHtml(input.code)}</code></pre>${metadata}${structuredInput}${outputSafeHtml(input.output)}</section>`;
 }
 
-function learningBlockMarkdown(title: string, language: string, code: string, output?: StructuredOutput) {
+function learningBlockMarkdown(title: string, language: string, code: string, output?: StructuredOutput, metadata: string[] = [], input?: StructuredOutput) {
   const fence = markdownFence(code);
   const safeLanguage = language.replace(/[^a-z0-9_+-]/g, "");
+  const details = metadata.length ? `\n\n${metadata.map((item) => `- ${item}`).join("\n")}` : "";
+  const structuredInput = input ? `\n\n**Input (${input.type})**\n\n${outputMarkdown(input)}` : "";
   const savedOutput = output ? `\n\n**Saved output (${output.type})**\n\n${outputMarkdown(output)}` : "";
-  return `**${title}** · \`${language}\`\n\n${fence}${safeLanguage}\n${code}\n${fence}${savedOutput}`;
+  return `**${title}** · \`${language}\`${details}\n\n${fence}${safeLanguage}\n${code}\n${fence}${structuredInput}${savedOutput}`;
+}
+
+function executableMetadata(block: Extract<ContentBlock, { type: "executable-code" }>) {
+  return [block.datasetId && `Dataset: ${block.datasetId}`, block.datasetVersion && `Dataset version: ${block.datasetVersion}`, block.datasetChecksum && `Dataset checksum: ${block.datasetChecksum}`, block.runtimeVersion && `Runtime: ${block.runtimeVersion}`, block.executedAt && `Executed: ${block.executedAt}`].filter(Boolean) as string[];
+}
+
+function formulaMetadata(block: Extract<ContentBlock, { type: "formula-example" }>) {
+  return [block.artifactType && `Artifact: ${block.artifactType}`, block.locale && `Locale: ${block.locale}`, ...block.compatibility.map((item) => `Compatibility: ${item}`), ...block.prerequisites.map((item) => `Prerequisite: ${item}`), block.verifiedAt && `Verified: ${block.verifiedAt}`].filter(Boolean) as string[];
+}
+
+function automationMetadata(block: Extract<ContentBlock, { type: "automation-script" }>) {
+  return [block.entryPoint && `Entry point: ${block.entryPoint}`, ...block.hostRequirements.map((item) => `Host: ${item}`), ...(block.permissions ?? []).map((item) => `Permission: ${item}`), ...(block.triggers ?? []).map((item) => `Trigger: ${item}`), block.verifiedAt && `Verified: ${block.verifiedAt}`].filter(Boolean) as string[];
 }
 
 function outputSafeHtml(output?: StructuredOutput) {
