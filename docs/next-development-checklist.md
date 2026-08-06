@@ -58,17 +58,19 @@
 
 ### 3. Confirmed backup restore/import
 
-- [ ] ออกแบบ restore service แยก validation, planning และ writing
-- [ ] เพิ่ม dry-run พร้อมสรุปจำนวน record ที่จะ create/update/skip
-- [ ] ตรวจ backup version และ referential integrity ก่อนเขียน
-- [ ] บังคับสร้าง backup ปัจจุบันก่อน restore
-- [ ] เพิ่ม confirmation ที่ระบุผลกระทบชัดเจน
-- [ ] เขียนข้อมูลด้วย transaction ตามขอบเขตที่ปลอดภัย
-- [ ] เพิ่ม audit log โดยไม่บันทึก secret หรือข้อมูลอ่อนไหวเกินจำเป็น
-- [ ] เพิ่ม integration tests สำหรับ valid, invalid และ interrupted restore
-- [ ] เขียน recovery/rollback procedure และทดลอง restore drill
+- [x] ออกแบบ restore service แยก validation, planning และ writing
+- [x] เพิ่ม dry-run พร้อมสรุปจำนวน record ที่จะ create/update/skip
+- [x] ตรวจ backup version และ referential integrity ก่อนเขียน
+- [x] บังคับสร้าง backup ปัจจุบันก่อน restore
+- [x] เพิ่ม confirmation ที่ระบุผลกระทบชัดเจน
+- [x] เขียนข้อมูลด้วย transaction ตามขอบเขตที่ปลอดภัย
+- [x] เพิ่ม audit log โดยไม่บันทึก secret หรือข้อมูลอ่อนไหวเกินจำเป็น
+- [x] เพิ่ม integration tests สำหรับ valid, invalid และ interrupted restore
+- [x] เขียน recovery/rollback procedure และทดลอง restore drill
 
 เกณฑ์เสร็จ: restore จาก backup ที่ทดสอบแล้วได้ครบ และความล้มเหลวไม่ทำให้ฐานข้อมูลอยู่ในสภาพครึ่งหนึ่ง
+
+ผลตรวจรับ 6 สิงหาคม 2026: Restore ใช้กลยุทธ์ full-replace แยก 3 เฟส (`validateBackupIntegrity` pure / `planRestore` read-only / `executeRestore` transaction) ที่ `src/core/backup/restore.ts` พร้อม API `/api/admin/backup/restore` (dry-run + execute) และ UI ที่ `/admin/settings` ระบบสร้าง pre-restore backup ก่อนเขียนเสมอและคืนให้ดาวน์โหลด, เขียนทั้ง 20 ตารางใน transaction เดียว (timeout 120 s), บันทึก audit `DATABASE_RESTORED` เฉพาะ metadata ไม่มี secret, integration tests 7 กรณีครอบคลุม valid/dry-run/broken integrity/dangling parent/transaction rollback/schema/category hierarchy ผ่านครบ; rollback ทำโดย restore pre-restore backup ที่ดาวน์โหลดไว้
 
 ## งานถัดไป — Editor และ Content Workflow
 
@@ -139,11 +141,13 @@
 
 ### 8. Scheduled publishing
 
-- [ ] สร้าง scheduler/worker หรือ cron endpoint พร้อม authentication
-- [ ] ทำ publish job ให้ idempotent และรองรับ retry
-- [ ] ใช้ timezone/UTC อย่างชัดเจน
-- [ ] เพิ่ม audit log และ failure visibility
-- [ ] เพิ่ม tests สำหรับ due, not-due, duplicate run และ failed run
+- [x] สร้าง scheduler/worker หรือ cron endpoint พร้อม authentication
+- [x] ทำ publish job ให้ idempotent และรองรับ retry
+- [x] ใช้ timezone/UTC อย่างชัดเจน
+- [x] เพิ่ม audit log และ failure visibility
+- [x] เพิ่ม tests สำหรับ due, not-due, duplicate run และ failed run
+
+ผลตรวจรับ 7 สิงหาคม 2026: Scheduler อยู่ที่ `src/core/content/scheduler.ts` เปรียบเทียบ `scheduledAt <= now` เป็น UTC ทั้งหมด แต่ละรายการถูก claim ด้วย `updateMany` ที่มี guard `status = "SCHEDULED"` จึง idempotent และปลอดภัยต่อ cron ซ้ำ/ซ้อน รายการที่ล้มเหลวค้าง SCHEDULED เพื่อ retry รอบถัดไป cron endpoint คือ `POST /api/admin/scheduled-publish` ยืนยันสิทธิ์ด้วย owner session หรือ `Authorization: Bearer <SCHEDULER_SECRET>` (timing-safe) พร้อม rate limit; UI ตั้งเวลา/ยกเลิกอยู่ในหน้า Content list; integration tests 6 กรณีครอบคลุม due/unlisted/not-due/duplicate/failed-run/retry ผ่านครบ
 
 ### 9. Production readiness
 
@@ -332,7 +336,7 @@ Route ใน blueprint ไม่จำเป็นต้องสร้างแ
 - [ ] พิจารณา `/admin/backups`; ปัจจุบัน Backup อยู่ใน Settings
 - [ ] Import endpoint/UI
 - [ ] Embed preview endpoint
-- [ ] Scheduled-job endpoint
+- [x] Scheduled-job endpoint — `POST /api/admin/scheduled-publish` (7 ส.ค. 2026)
 - [ ] Preview share endpoint/token หากต้องใช้
 - [ ] Dynamic Open Graph image route หากต้องใช้
 
@@ -370,11 +374,11 @@ Route ใน blueprint ไม่จำเป็นต้องสร้างแ
 
 ใช้ส่วนนี้จดก่อนหยุด เพื่อเริ่มรอบถัดไปได้ทันที:
 
-- วันที่:
-- เป้าหมายรอบนี้:
-- ทำเสร็จ:
-- กำลังทำ:
-- ปัญหาที่พบ:
-- ไฟล์สำคัญที่แก้:
-- คำสั่งตรวจสอบและผลลัพธ์:
-- ขั้นแรกของรอบถัดไป:
+- วันที่: 7 สิงหาคม 2026
+- เป้าหมายรอบนี้: ปิดงานข้อ 3 (Confirmed backup restore/import) และข้อ 8 (Scheduled publishing)
+- ทำเสร็จ: restore service 3 เฟส + API + UI + tests 7 กรณี; scheduler service (UTC, idempotent claim, retry), cron endpoint `/api/admin/scheduled-publish` (Bearer/owner auth), Server Actions ตั้งเวลา/ยกเลิก, UI ใน Content list, status "scheduled" ใน repository/types, integration tests 6 กรณี, อัปเดตเอกสาร
+- กำลังทำ: —
+- ปัญหาที่พบ: `inserted` ถูกอ้างอิงก่อน initialization ใน restore transaction (แก้เป็นใช้ `written`), test database ต้อง start container `knowledge-hub-test-db` ที่ port 55432
+- ไฟล์สำคัญที่แก้: `src/core/backup/restore.ts` (ใหม่), `src/app/api/admin/backup/restore/route.ts` (ใหม่), `src/components/admin/backup-restore.tsx` (ใหม่), `src/core/content/scheduler.ts` (ใหม่), `src/app/api/admin/scheduled-publish/route.ts` (ใหม่), `src/app/admin/content/actions.ts`, `src/app/admin/content/page.tsx`, `src/core/content/types.ts`, `src/core/content/repository.ts`, `src/app/admin/settings/page.tsx`, `src/app/globals.css`, `tests/integration/backup-restore.test.ts` (ใหม่), `tests/integration/scheduled-publish.test.ts` (ใหม่)
+- คำสั่งตรวจสอบและผลลัพธ์: `npm run typecheck` ผ่าน, `npm run lint` ผ่าน, `npm test` 39/39 ผ่าน, `npm run test:integration` 16/16 ผ่าน, `npm run build` ผ่าน
+- ขั้นแรกของรอบถัดไป: งานข้อ 9 — Production readiness (structured error reporting, request correlation, monitoring, deployment guide) หรือข้อ 4 — Rich Block Editor ตามลำดับที่เลือก

@@ -6,7 +6,7 @@ Implementation ปัจจุบันครอบคลุม Foundation แ�
 
 `Login → Create → Write with BlockNote → Database autosave → Publish → Public reader → Browse List/Card`
 
-ระบบมี S3-compatible object storage, OpenRouter AI workflow, Quick Capture/Inbox, Markdown/JSON content export, versioned database backup พร้อม non-destructive validation, Site Settings และ Theme activation แล้ว ส่วน import, confirmed restore, scheduled publishing และ advanced bulk operations ยังเป็นงานระยะถัดไป
+ระบบมี S3-compatible object storage, OpenRouter AI workflow, Quick Capture/Inbox, Markdown/JSON content export, versioned database backup พร้อม non-destructive validation และ confirmed restore (full-replace ใน transaction พร้อม pre-restore backup), scheduled publishing (idempotent cron endpoint + UTC comparison + per-item atomic claim), Site Settings และ Theme activation แล้ว ส่วน import จากไฟล์ภายนอก และ advanced bulk operations ยังเป็นงานระยะถัดไป
 
 ## Boundaries
 
@@ -33,10 +33,20 @@ Repository บังคับ visibility rule:
 
 Admin route มี `noindex`, signed HTTP-only session cookie, owner credential allowlist และตรวจสิทธิ์ซ้ำใน mutation API/Server Actions แล้ว Login และ mutation API สำคัญใช้ PostgreSQL-backed rate limiting ส่วน API upload/content ตรวจ trusted origin เพิ่มเติม Credential อยู่ใน environment variables เท่านั้น ก่อน Production ควรพิจารณา OAuth หากต้องการลดภาระจัดการรหัสผ่าน
 
+## Backup restore
+
+`src/core/backup/restore.ts` แยก restore เป็นสามเฟส: `validateBackupIntegrity` (pure function ตรวจ referential integrity ภายในไฟล์), `planRestore` (read-only เปรียบเทียบจำนวน record ปัจจุบันกับ Backup สำหรับ dry-run) และ `executeRestore` (เขียนจริง) API `/api/admin/backup/restore` รับ `dryRun` เพื่อสลับเฟส และ UI ในหน้า Settings บังคับยืนยันผลกระทบก่อนเสมอ
+
+กลยุทธ์คือ full-replace: ลบทั้ง 20 ตารางในลำดับ children-before-parents แล้ว insert กลับในลำดับ parents-before-children ภายใน transaction เดียว (timeout 120 s) จึงไม่มีทางค้างครึ่งทาง Category self-reference ถูก insert แบบ null-parent ก่อนแล้วค่อย patch กลับ ก่อนเขียนจริงระบบสร้าง pre-restore backup และคืน JSON ให้ผู้เรียกดาวน์โหลดเป็น recovery path; `RateLimitBucket` และ Prisma migration bookkeeping ไม่ถูกลบเพราะไม่อยู่ใน Backup
+
+## Scheduled publishing
+
+`src/core/content/scheduler.ts` เปรียบเทียบ `scheduledAt <= now` เป็น UTC และ claim แต่ละรายการด้วย `updateMany` ที่มี guard `status = "SCHEDULED"` จึง idempotent และปลอดภัยต่อ cron ซ้ำ/ซ้อน รายการที่ล้มเหลวค้าง `SCHEDULED` เพื่อ retry รอบถัดไป cron endpoint `POST /api/admin/scheduled-publish` ยืนยันสิทธิ์ด้วย owner session หรือ `Authorization: Bearer <SCHEDULER_SECRET>` (timing-safe) พร้อม rate limit 60 ครั้งต่อนาที UI ตั้งเวลา/ยกเลิกอยู่ในหน้า Content list ผ่าน Server Actions `setContentScheduleAction` และ `clearContentScheduleAction` ซึ่งบันทึก audit `CONTENT_SCHEDULED`/`CONTENT_SCHEDULE_CLEARED` และการเผยแพร่จริงบันทึก `CONTENT_SCHEDULED_PUBLISHED` พร้อม revision แหล่ง `SYSTEM`
+
 ## Next implementation sequence
 
-1. เพิ่ม confirmed restore และ bulk import
-2. เพิ่ม background worker/queue หาก AI workload โตเกิน synchronous MVP
+1. เพิ่ม background worker/queue หาก AI workload โตเกิน synchronous MVP
+2. เติม Relations/Sources และ block types ทั่วไปที่ยังไม่มี authoring UI ครบ
 
 ## Taxonomy workflow
 

@@ -43,3 +43,7 @@ public/uploads/
 public/duckdb/
 public/sqlite/
 !.gitkeep
+
+# Test artifacts
+test-results/
+playwright-report/

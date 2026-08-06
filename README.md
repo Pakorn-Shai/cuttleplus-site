@@ -2,24 +2,25 @@
 
 เว็บคลังความรู้ส่วนตัวที่เน้นการอ่านง่าย การจัดระเบียบ และการค้นหาสิ่งที่เคยเรียนรู้ พัฒนาด้วย Next.js, TypeScript, BlockNote และ Prisma
 
-> **สถานะปัจจุบัน:** Working MVP พร้อม Public/Admin, BlockNote editor, Quick Capture/Inbox, Content filters, taxonomy, safe rendering, Revision History, Markdown/JSON export, versioned database backup/validation, Media Library/S3, Site Settings, Theme activation, production safeguards และ OpenRouter AI Suggestion/Diff Review รายละเอียดสถาปัตยกรรมอยู่ที่ [docs/architecture.md](docs/architecture.md)
+> **สถานะปัจจุบัน:** Working MVP พร้อม Public/Admin, BlockNote editor, Quick Capture/Inbox, Content filters, taxonomy, safe rendering, Revision History, Markdown/JSON export, versioned database backup/validation และ confirmed restore, scheduled publishing, Media Library/S3, Site Settings, Theme activation, production safeguards และ OpenRouter AI Suggestion/Diff Review รายละเอียดสถาปัตยกรรมอยู่ที่ [docs/architecture.md](docs/architecture.md)
 
 ## สถานะฟีเจอร์
 
-| ส่วน | สถานะ | หมายเหตุ |
-| --- | --- | --- |
-| Public library, article, category, tag และ search | ใช้งานได้ | แสดงเฉพาะเนื้อหาตาม status/visibility rule |
-| Owner login และ Admin guard | ใช้งานได้ | session cookie อายุ 8 ชั่วโมง; รองรับ Owner คนเดียว |
-| BlockNote editor และ autosave | ใช้งานได้ | รองรับ paragraph, heading, list และ code block เป็นหลัก |
-| Quick Capture, Inbox และ Content lifecycle | ใช้งานได้ | Draft/Publish/Archive พร้อม audit log |
-| Category, Tag, Series และ Collection | ใช้งานได้ | Relations/Sources ยังไม่มี workflow ครบทุกส่วนใน UI |
-| Revision, restore และ Markdown/JSON export | ใช้งานได้ | Restore สำรอง revision ปัจจุบันก่อนเสมอ |
-| Media Library | ใช้งานได้ | Local storage ใน development; S3-compatible storage ใน production |
-| Theme และ Site Settings | ใช้งานได้ | มี Clarity (`default`) และ Notebook (`minimal`) |
-| Database backup | บางส่วน | ดาวน์โหลดและ validate ได้ แต่ยังไม่มี confirmed restore/import |
-| OpenRouter AI suggestion | ใช้งานได้ระดับ MVP | Generate, Diff Review และ atomic Accept/Reject ผ่าน integration/E2E tests |
-| Learning example blocks | ใช้งานได้ | Native BlockNote blocks, DuckDB/SQLite Run/Review/Save, Formula/Automation authoring, structured input/output, export และ Public renderer พร้อม |
-| Scheduled publishing และ semantic search | ยังไม่ทำ | E2E foundation และ critical browser flows ทำแล้ว |
+| ส่วน                                              | สถานะ              | หมายเหตุ                                                                                                                                        |
+| ------------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public library, article, category, tag และ search | ใช้งานได้          | แสดงเฉพาะเนื้อหาตาม status/visibility rule                                                                                                      |
+| Owner login และ Admin guard                       | ใช้งานได้          | session cookie อายุ 8 ชั่วโมง; รองรับ Owner คนเดียว                                                                                             |
+| BlockNote editor และ autosave                     | ใช้งานได้          | รองรับ paragraph, heading, list และ code block เป็นหลัก                                                                                         |
+| Quick Capture, Inbox และ Content lifecycle        | ใช้งานได้          | Draft/Publish/Archive พร้อม audit log                                                                                                           |
+| Category, Tag, Series และ Collection              | ใช้งานได้          | Relations/Sources ยังไม่มี workflow ครบทุกส่วนใน UI                                                                                             |
+| Revision, restore และ Markdown/JSON export        | ใช้งานได้          | Restore สำรอง revision ปัจจุบันก่อนเสมอ                                                                                                         |
+| Media Library                                     | ใช้งานได้          | Local storage ใน development; S3-compatible storage ใน production                                                                               |
+| Theme และ Site Settings                           | ใช้งานได้          | มี Clarity (`default`) และ Notebook (`minimal`)                                                                                                 |
+| Database backup และ Restore                       | ใช้งานได้          | ดาวน์โหลด, validate, dry-run plan และ confirmed restore ใน transaction พร้อม pre-restore backup                                                 |
+| OpenRouter AI suggestion                          | ใช้งานได้ระดับ MVP | Generate, Diff Review และ atomic Accept/Reject ผ่าน integration/E2E tests                                                                       |
+| Learning example blocks                           | ใช้งานได้          | Native BlockNote blocks, DuckDB/SQLite Run/Review/Save, Formula/Automation authoring, structured input/output, export และ Public renderer พร้อม |
+| Scheduled publishing | ใช้งานได้ | ตั้งเวลาจาก Content list, cron endpoint แบบ idempotent, revision/audit log และ integration tests ครบ |
+| Semantic search | ยังไม่ทำ | E2E foundation และ critical browser flows ทำแล้ว |
 
 ## เริ่มใช้งานบน Local
 
@@ -63,23 +64,24 @@ npm run dev
 
 ## เส้นทางสำคัญ
 
-| ส่วน | URL | สิ่งที่ควรเห็น |
-| --- | --- | --- |
-| หน้าแรก | [http://localhost:3000](http://localhost:3000) | Hero, หมวดหมู่ และเนื้อหาล่าสุด |
-| คลังความรู้ | [http://localhost:3000/knowledge](http://localhost:3000/knowledge) | List/Card view และตัวกรอง |
-| ค้นหา | [http://localhost:3000/search](http://localhost:3000/search) | ค้นจากชื่อ เนื้อหา หมวดหมู่ และ tag |
-| แท็ก | [http://localhost:3000/tags](http://localhost:3000/tags) | แท็กที่มีบทความ Public และหน้ารวมรายแท็ก |
-| Series | [http://localhost:3000/series](http://localhost:3000/series) | ชุดบทความ Public ที่จัดลำดับการอ่าน |
-| Collections | [http://localhost:3000/collections](http://localhost:3000/collections) | ชุดความรู้ Public ที่คัดรวมตามหัวข้อ |
-| Login | [http://localhost:3000/login](http://localhost:3000/login) | Owner login |
-| Admin | [http://localhost:3000/admin](http://localhost:3000/admin) | Dashboard |
-| Editor | [http://localhost:3000/admin/content/new](http://localhost:3000/admin/content/new) | สร้างและแก้ไขบทความ |
-| Inbox | [http://localhost:3000/admin/inbox](http://localhost:3000/admin/inbox) | Quick Capture และรายการรอจัดระเบียบ |
-| Media | [http://localhost:3000/admin/media](http://localhost:3000/admin/media) | อัปโหลดและจัดการรูปภาพ |
-| AI Workspace | [http://localhost:3000/admin/ai](http://localhost:3000/admin/ai) | Generate, Diff และ Review suggestion |
-| Settings/Backup | [http://localhost:3000/admin/settings](http://localhost:3000/admin/settings) | Site Settings, ดาวน์โหลดและ validate backup |
-| Search API | [http://localhost:3000/api/search?q=SQL](http://localhost:3000/api/search?q=SQL) | ผลค้นหารูป JSON |
-| Health Check | [http://localhost:3000/api/health](http://localhost:3000/api/health) | Application/Database status; `200` หรือ `503` |
+| ส่วน            | URL                                                                                | สิ่งที่ควรเห็น                                |
+| --------------- | ---------------------------------------------------------------------------------- | --------------------------------------------- |
+| หน้าแรก         | [http://localhost:3000](http://localhost:3000)                                     | Hero, หมวดหมู่ และเนื้อหาล่าสุด               |
+| คลังความรู้     | [http://localhost:3000/knowledge](http://localhost:3000/knowledge)                 | List/Card view และตัวกรอง                     |
+| ค้นหา           | [http://localhost:3000/search](http://localhost:3000/search)                       | ค้นจากชื่อ เนื้อหา หมวดหมู่ และ tag           |
+| แท็ก            | [http://localhost:3000/tags](http://localhost:3000/tags)                           | แท็กที่มีบทความ Public และหน้ารวมรายแท็ก      |
+| Series          | [http://localhost:3000/series](http://localhost:3000/series)                       | ชุดบทความ Public ที่จัดลำดับการอ่าน           |
+| Collections     | [http://localhost:3000/collections](http://localhost:3000/collections)             | ชุดความรู้ Public ที่คัดรวมตามหัวข้อ          |
+| Login           | [http://localhost:3000/login](http://localhost:3000/login)                         | Owner login                                   |
+| Admin           | [http://localhost:3000/admin](http://localhost:3000/admin)                         | Dashboard                                     |
+| Editor          | [http://localhost:3000/admin/content/new](http://localhost:3000/admin/content/new) | สร้างและแก้ไขบทความ                           |
+| Inbox           | [http://localhost:3000/admin/inbox](http://localhost:3000/admin/inbox)             | Quick Capture และรายการรอจัดระเบียบ           |
+| Media           | [http://localhost:3000/admin/media](http://localhost:3000/admin/media)             | อัปโหลดและจัดการรูปภาพ                        |
+| AI Workspace    | [http://localhost:3000/admin/ai](http://localhost:3000/admin/ai)                   | Generate, Diff และ Review suggestion          |
+| Settings/Backup | [http://localhost:3000/admin/settings](http://localhost:3000/admin/settings)       | Site Settings, ดาวน์โหลดและ validate backup   |
+| Search API      | [http://localhost:3000/api/search?q=SQL](http://localhost:3000/api/search?q=SQL)   | ผลค้นหารูป JSON                               |
+| Health Check    | [http://localhost:3000/api/health](http://localhost:3000/api/health)               | Application/Database status; `200` หรือ `503` |
+| Scheduled publish cron | `POST /api/admin/scheduled-publish` | เผยแพร่เนื้อหาที่ถึงกำหนด; เรียกซ้ำได้ปลอดภัย ต้องมี owner session หรือ `Authorization: Bearer <SCHEDULER_SECRET>` |
 
 ## Workflow สำคัญ
 
@@ -89,7 +91,9 @@ Editor autosave ลง Database หลังหยุดพิมพ์ประ
 
 ### Revision และ Backup
 
-Revision restore จะสำรองเวอร์ชันปัจจุบันก่อนย้อนกลับเสมอ Database backup รวมข้อมูลแอป 20 กลุ่ม แต่ไม่รวม `.env`, API keys, session/rate-limit bucket และ binary media ใน object storage ขณะนี้ไฟล์ backup ทำได้เฉพาะดาวน์โหลดและ validate; การ restore ทั้งฐานข้อมูลยังไม่เปิดใช้
+Revision restore จะสำรองเวอร์ชันปัจจุบันก่อนย้อนกลับเสมอ Database backup รวมข้อมูลแอป 20 กลุ่ม แต่ไม่รวม `.env`, API keys, session/rate-limit bucket และ binary media ใน object storage
+
+การ Restore ฐานข้อมูลทำได้จากหน้า Settings โดยใช้กลยุทธ์ full-replace: ระบบตรวจ schema และ referential integrity ของไฟล์, แสดง dry-run plan เปรียบเทียบจำนวน record ปัจจุบันกับใน Backup, ต้องติ๊กยืนยันผลกระทบ, สร้าง Backup ของสถานะปัจจุบันก่อนเขียนเสมอ และเขียนทั้ง 20 ตารางใน transaction เดียว หากขั้นตอนใดล้มเหลวจะ rollback ทั้งหมดและฐานข้อมูลไม่ค้างครึ่งทาง หลัง Restore สำเร็จสามารถดาวน์โหลด pre-restore backup ไว้เผื่อย้อนกลับได้
 
 ### AI Suggestion
 
@@ -99,50 +103,55 @@ AI ส่งเฉพาะ title, excerpt และ reader blocks ไปยั�
 
 AI Accept ผ่าน integration และ browser E2E ตั้งแต่ suggestion → Server Action → revision เดิม → Content → Editor/Preview แล้ว ระบบปฏิเสธ suggestion เมื่อบทความถูกแก้หลัง Generate และ rollback ทั้ง transaction เมื่อมีขั้นตอนใดล้มเหลว
 
+### Scheduled Publishing
+
+ตั้งเวลาเผยแพร่ได้จากหน้า Content list (datetime-local ต่อบทความ Draft/Inbox) ระบบจะเปลี่ยนสถานะเป็น `SCHEDULED` และเผยแพร่ให้อัตโนมัติเมื่อถึงกำหนดผ่าน cron endpoint `POST /api/admin/scheduled-publish` ซึ่งเรียกซ้ำได้อย่างปลอดภัย (idempotent) เพราะแต่ละรายการถูก claim ด้วย guard `status = "SCHEDULED"` การเปรียบเทียบเวลาใช้เป็น UTC ทั้งหมด เนื้อหา Private จะถูกเปลี่ยนเป็น Public ตอนเผยแพร่ (Unlisted คงเดิม) และทุกการเผยแพร่สร้าง revision แหล่ง `SYSTEM` พร้อม audit log รายการที่ล้มเหลวจะคงสถานะ `SCHEDULED` เพื่อให้ cron รอบถัดไปลองใหม่
+
 ## Environment Variables
 
-| ตัวแปร | จำเป็น | ใช้สำหรับ |
-| --- | --- | --- |
-| `DATABASE_URL` | ใช่ | PostgreSQL connection string สำหรับ Prisma |
-| `NEXT_PUBLIC_SITE_URL` | Production | canonical origin, metadata และ trusted-origin check; ห้ามมี path ต่อท้าย |
-| `NEXT_PUBLIC_THEME_ID` | ไม่ | fallback theme id เมื่อ Database ยังไม่มี activation; `default` หรือ `minimal` |
-| `OWNER_EMAIL` | แนะนำ | Login identifier และ Owner ที่ `db:seed` สร้าง |
-| `ADMIN_USERNAME` | ทางเลือก | fallback login identifier เมื่อไม่ใช้ `OWNER_EMAIL` |
-| `ADMIN_PASSWORD` | ใช่สำหรับ Admin | Owner password; ห้าม commit |
-| `ADMIN_SESSION_SECRET` | ใช่สำหรับ Admin | ลงลายเซ็น cookie; อย่างน้อย 32 ตัวอักษร |
-| `STORAGE_ENDPOINT` | แล้วแต่ provider | endpoint ของ S3-compatible storage เช่น Cloudflare R2 |
-| `STORAGE_REGION` | Production | storage region; R2 ใช้ `auto` |
-| `STORAGE_BUCKET` | Production | media bucket |
-| `STORAGE_ACCESS_KEY_ID` | Production | storage access key; ห้าม commit |
-| `STORAGE_SECRET_ACCESS_KEY` | Production | storage secret; ห้าม commit |
-| `STORAGE_PUBLIC_BASE_URL` | Production | public/CDN base URL ของ bucket |
-| `STORAGE_FORCE_PATH_STYLE` | ไม่ | ตั้ง `true` สำหรับ provider ที่ต้องใช้ path-style URL |
-| `MAX_UPLOAD_BYTES` | ไม่ | default 5 MiB; ระบบไม่อนุญาตเกิน 10 MiB |
-| `OPENROUTER_API_KEY` | เมื่อใช้ AI | OpenRouter API key; ห้าม commit |
-| `OPENROUTER_BASE_URL` | ไม่ | default `https://openrouter.ai/api/v1` |
-| `OPTIMIZER_MODEL` | ไม่ | model หลัก; `.env.example` ตั้ง `openai/gpt-5.6-luna-pro` |
-| `OPENROUTER_MODEL` | ไม่ | fallback model name เดิมเมื่อไม่มี `OPTIMIZER_MODEL` |
-| `AI_MAX_TOKENS` | ไม่ | output token limit; default `4096`, ช่วงที่รับ `256–32768` |
-| `AI_TIMEOUT` | ไม่ | timeout หน่วย ms; default `60000`, ช่วงที่รับ `5000–300000` |
+| ตัวแปร                      | จำเป็น           | ใช้สำหรับ                                                                      |
+| --------------------------- | ---------------- | ------------------------------------------------------------------------------ |
+| `DATABASE_URL`              | ใช่              | PostgreSQL connection string สำหรับ Prisma                                     |
+| `NEXT_PUBLIC_SITE_URL`      | Production       | canonical origin, metadata และ trusted-origin check; ห้ามมี path ต่อท้าย       |
+| `NEXT_PUBLIC_THEME_ID`      | ไม่              | fallback theme id เมื่อ Database ยังไม่มี activation; `default` หรือ `minimal` |
+| `OWNER_EMAIL`               | แนะนำ            | Login identifier และ Owner ที่ `db:seed` สร้าง                                 |
+| `ADMIN_USERNAME`            | ทางเลือก         | fallback login identifier เมื่อไม่ใช้ `OWNER_EMAIL`                            |
+| `ADMIN_PASSWORD`            | ใช่สำหรับ Admin  | Owner password; ห้าม commit                                                    |
+| `ADMIN_SESSION_SECRET`      | ใช่สำหรับ Admin  | ลงลายเซ็น cookie; อย่างน้อย 32 ตัวอักษร                                        |
+| `STORAGE_ENDPOINT`          | แล้วแต่ provider | endpoint ของ S3-compatible storage เช่น Cloudflare R2                          |
+| `STORAGE_REGION`            | Production       | storage region; R2 ใช้ `auto`                                                  |
+| `STORAGE_BUCKET`            | Production       | media bucket                                                                   |
+| `STORAGE_ACCESS_KEY_ID`     | Production       | storage access key; ห้าม commit                                                |
+| `STORAGE_SECRET_ACCESS_KEY` | Production       | storage secret; ห้าม commit                                                    |
+| `STORAGE_PUBLIC_BASE_URL`   | Production       | public/CDN base URL ของ bucket                                                 |
+| `STORAGE_FORCE_PATH_STYLE`  | ไม่              | ตั้ง `true` สำหรับ provider ที่ต้องใช้ path-style URL                          |
+| `MAX_UPLOAD_BYTES`          | ไม่              | default 5 MiB; ระบบไม่อนุญาตเกิน 10 MiB                                        |
+| `OPENROUTER_API_KEY`        | เมื่อใช้ AI      | OpenRouter API key; ห้าม commit                                                |
+| `OPENROUTER_BASE_URL`       | ไม่              | default `https://openrouter.ai/api/v1`                                         |
+| `OPTIMIZER_MODEL`           | ไม่              | model หลัก; `.env.example` ตั้ง `openai/gpt-5.6-luna-pro`                      |
+| `OPENROUTER_MODEL`          | ไม่              | fallback model name เดิมเมื่อไม่มี `OPTIMIZER_MODEL`                           |
+| `AI_MAX_TOKENS`             | ไม่              | output token limit; default `4096`, ช่วงที่รับ `256–32768`                     |
+| `AI_TIMEOUT`                | ไม่              | timeout หน่วย ms; default `60000`, ช่วงที่รับ `5000–300000`                    |
+| `SCHEDULER_SECRET` | เมื่อใช้ cron | Bearer token สำหรับ external cron ที่เรียก `/api/admin/scheduled-publish`; ห้าม commit |
 
 ถ้าไม่กำหนด storage credentials ใน development ระบบเขียนไฟล์ลง `public/uploads` อัตโนมัติ แต่ production บังคับให้ตั้ง S3-compatible storage ครบ
 
 ## คำสั่งที่ใช้บ่อย
 
-| คำสั่ง | หน้าที่ |
-| --- | --- |
-| `npm run dev` | Development server พร้อม hot reload |
-| `npm run build` | สร้าง production build |
-| `npm start` | เปิด production server หลัง build |
-| `npm run typecheck` | ตรวจ TypeScript |
-| `npm run lint` | ตรวจ ESLint |
-| `npm test` | รัน Vitest unit tests |
-| `npm run test:integration` | รัน Vitest กับ PostgreSQL test database แยก |
-| `npm run test:e2e` | รัน Playwright critical browser flows |
-| `npm run db:generate` | สร้าง Prisma Client |
-| `npm run db:validate` | ตรวจ Prisma schema |
-| `npm run db:migrate` | Apply migrations ที่ยังไม่ถูกใช้ |
-| `npm run db:seed` | สร้าง Owner และข้อมูลตัวอย่าง |
+| คำสั่ง                         | หน้าที่                                       |
+| ------------------------------ | --------------------------------------------- |
+| `npm run dev`                  | Development server พร้อม hot reload           |
+| `npm run build`                | สร้าง production build                        |
+| `npm start`                    | เปิด production server หลัง build             |
+| `npm run typecheck`            | ตรวจ TypeScript                               |
+| `npm run lint`                 | ตรวจ ESLint                                   |
+| `npm test`                     | รัน Vitest unit tests                         |
+| `npm run test:integration`     | รัน Vitest กับ PostgreSQL test database แยก   |
+| `npm run test:e2e`             | รัน Playwright critical browser flows         |
+| `npm run db:generate`          | สร้าง Prisma Client                           |
+| `npm run db:validate`          | ตรวจ Prisma schema                            |
+| `npm run db:migrate`           | Apply migrations ที่ยังไม่ถูกใช้              |
+| `npm run db:seed`              | สร้าง Owner และข้อมูลตัวอย่าง                 |
 | `npm run db:backfill-renderer` | สร้าง HTML/plain text artifacts ให้ข้อมูลเดิม |
 
 ตรวจคุณภาพก่อนส่งงาน:
@@ -166,8 +175,8 @@ integration/E2E ต้องมี `.env.test` ที่สร้างจาก
 
 ลำดับนี้อิงจากช่องว่างของ implementation ปัจจุบัน ไม่ได้อิงหมายเลข Phase ใน blueprint เก่า:
 
-1. ทำ confirmed database restore และ import พร้อม dry-run, backup ก่อนเขียน และ audit log
-2. เพิ่ม scheduled publishing ผ่าน worker/cron ที่ทำงานซ้ำได้อย่างปลอดภัย
+1. ~~ทำ confirmed database restore และ importพร้อม dry-run, backup ก่อนเขียน และ audit log~~ ✅ เสร็จแล้ว (6 ส.ค. 2026)
+2. ~~เพิ่ม scheduled publishing ผ่าน worker/cron ที่ทำงานซ้ำได้อย่างปลอดภัย~~ ✅ เสร็จแล้ว (7 ส.ค. 2026)
 3. เติม Relations/Sources และ block types ทั่วไปที่ยังไม่มี authoring UI ครบ
 4. เติม UI ของ Relations และ Sources รวมถึง block types ที่ยังไม่รองรับใน Editor
 5. เพิ่ม production observability, error reporting และเอกสาร deployment ตาม platform ที่เลือกจริง
@@ -238,7 +247,13 @@ implementation ปัจจุบัน self-host DuckDB และ sql.js worker
 type FormulaExampleBlock = {
   type: "formula-example";
   engine: "dax" | "power-query-m" | "excel" | "google-sheets";
-  artifactType?: "measure" | "calculated-column" | "calculated-table" | "query" | "cell-formula" | "array-formula";
+  artifactType?:
+    | "measure"
+    | "calculated-column"
+    | "calculated-table"
+    | "query"
+    | "cell-formula"
+    | "array-formula";
   title: string;
   expression: string;
   prerequisites: string[];
@@ -295,16 +310,16 @@ Public renderer ของทั้งสอง block แสดง syntax-highlig
 
 ## แก้ปัญหาเบื้องต้น
 
-| อาการ | จุดที่ควรตรวจ |
-| --- | --- |
-| Login ไม่ผ่าน | `OWNER_EMAIL`/`ADMIN_USERNAME`, `ADMIN_PASSWORD`, secret ยาวอย่างน้อย 32 ตัว และมี Owner ใน Database |
-| Admin เด้งกลับ Login | session อายุ 8 ชั่วโมง, cookie/HTTPS และ `OWNER_EMAIL` ต้องตรงกับ User ที่ seed ไว้ |
-| Autosave ขึ้น Untrusted origin | `NEXT_PUBLIC_SITE_URL`, reverse-proxy host และ `x-forwarded-proto` |
-| หน้า Public ไม่พบบทความ | ต้องเป็น `PUBLISHED` และ `PUBLIC`; `UNLISTED` เปิดได้จาก URL ตรงเท่านั้น |
-| Media upload ใช้ไม่ได้ใน production | ตั้ง storage variables ให้ครบและตรวจ bucket/CORS/public base URL |
-| AI สร้างไม่ได้ | API key, credits, model, `AI_TIMEOUT` และ error ใน “งานล่าสุด” |
-| AI ขึ้น Completed แต่บทความไม่เปลี่ยน | Completed เป็นสถานะ Generate; ตรวจว่า Accept แล้วและดู Revision/Preview ตามข้อจำกัดด้านบน |
-| Health Check คืน `503` | ตรวจ `DATABASE_URL`, network allowlist และ migration |
+| อาการ                                 | จุดที่ควรตรวจ                                                                                        |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Login ไม่ผ่าน                         | `OWNER_EMAIL`/`ADMIN_USERNAME`, `ADMIN_PASSWORD`, secret ยาวอย่างน้อย 32 ตัว และมี Owner ใน Database |
+| Admin เด้งกลับ Login                  | session อายุ 8 ชั่วโมง, cookie/HTTPS และ `OWNER_EMAIL` ต้องตรงกับ User ที่ seed ไว้                  |
+| Autosave ขึ้น Untrusted origin        | `NEXT_PUBLIC_SITE_URL`, reverse-proxy host และ `x-forwarded-proto`                                   |
+| หน้า Public ไม่พบบทความ               | ต้องเป็น `PUBLISHED` และ `PUBLIC`; `UNLISTED` เปิดได้จาก URL ตรงเท่านั้น                             |
+| Media upload ใช้ไม่ได้ใน production   | ตั้ง storage variables ให้ครบและตรวจ bucket/CORS/public base URL                                     |
+| AI สร้างไม่ได้                        | API key, credits, model, `AI_TIMEOUT` และ error ใน “งานล่าสุด”                                       |
+| AI ขึ้น Completed แต่บทความไม่เปลี่ยน | Completed เป็นสถานะ Generate; ตรวจว่า Accept แล้วและดู Revision/Preview ตามข้อจำกัดด้านบน            |
+| Health Check คืน `503`                | ตรวจ `DATABASE_URL`, network allowlist และ migration                                                 |
 
 ## โครงสร้างโปรเจกต์
 
