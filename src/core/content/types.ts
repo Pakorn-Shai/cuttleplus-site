@@ -2,7 +2,7 @@ import type { z } from "zod";
 import type { contentBlockSchema, structuredOutputSchema } from "./blocks/schema";
 
 export type ContentVisibility = "private" | "unlisted" | "public";
-export type ContentStatus = "inbox" | "draft" | "published" | "archived";
+export type ContentStatus = "inbox" | "draft" | "scheduled" | "published" | "archived";
 export type ContentKind = "Quick Note" | "Knowledge Note" | "Tutorial" | "Article" | "Code Snippet" | "Troubleshooting" | "Cheat Sheet" | "Reference" | "Learning Log" | "Project Note" | "Case Study" | "Checklist";
 
 export type StructuredOutput = z.infer<typeof structuredOutputSchema>;
@@ -68,6 +68,7 @@ export interface KnowledgeContent {
   readingTime: number;
   updatedAt: string;
   publishedAt?: string;
+  scheduledAt?: string;
   featured?: boolean;
   blocks: ContentBlock[];
   headings: { id: string; level: 2 | 3; text: string }[];

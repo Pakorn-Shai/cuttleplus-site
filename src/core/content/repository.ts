@@ -284,6 +284,7 @@ function mapContent(content: ContentRecord): KnowledgeContent {
     readingTime: content.readingTime,
     updatedAt: content.updatedAt.toISOString().slice(0, 10),
     publishedAt: content.publishedAt?.toISOString().slice(0, 10),
+    scheduledAt: content.scheduledAt?.toISOString() ?? undefined,
     featured: content.featured,
     blocks: artifacts.blocks,
     headings: artifacts.headings,
@@ -292,6 +293,7 @@ function mapContent(content: ContentRecord): KnowledgeContent {
 
 function mapStatus(status: ContentRecord["status"]): ContentStatus {
   if (status === "INBOX") return "inbox";
+  if (status === "SCHEDULED") return "scheduled";
   if (status === "PUBLISHED") return "published";
   if (status === "ARCHIVED" || status === "DELETED") return "archived";
   return "draft";

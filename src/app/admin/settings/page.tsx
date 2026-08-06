@@ -1,4 +1,5 @@
-import { DatabaseBackup, Download, Globe2, Save } from "lucide-react";
+import { DatabaseBackup, Download, Globe2, RotateCcw, Save } from "lucide-react";
+import { BackupRestore } from "@/components/admin/backup-restore";
 import { BackupValidator } from "@/components/admin/backup-validator";
 import { getSiteSettings } from "@/core/site/settings";
 import { saveSiteSettingsAction } from "./actions";
@@ -20,6 +21,11 @@ export default async function SiteSettingsPage({ searchParams }: { searchParams:
       <p className="muted">ไม่รวมค่าใน .env, API keys, session, rate-limit ชั่วคราว และไฟล์รูปจริงใน object storage โดย Media จะมีเฉพาะ metadata และ URL</p>
       <a className="secondary-button" href="/api/admin/backup"><Download size={14} /> ดาวน์โหลด Backup</a>
       <BackupValidator />
+    </div></section>
+    <section className="admin-panel settings-panel backup-panel"><div className="panel-head"><h3><RotateCcw size={15} /> Restore ข้อมูล</h3></div><div className="panel-body backup-copy">
+      <p>กู้คืนข้อมูลทั้งฐานข้อมูลจากไฟล์ Backup ที่ดาวน์โหลดไว้ ระบบจะตรวจไฟล์ แสดงแผนผลกระทบ และสร้าง Backup ของสถานะปัจจุบันก่อนยืนยันเสมอ</p>
+      <p className="muted">การ Restore จะลบข้อมูลปัจจุบันทั้งหมดแล้วแทนที่ด้วยข้อมูลใน Backup กรุณาตรวจสอบแผนก่อนยืนยัน</p>
+      <BackupRestore />
     </div></section>
   </main>;
 }
