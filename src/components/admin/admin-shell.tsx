@@ -13,6 +13,7 @@ const manageLinks = [
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   return <div className="admin-root">
+    <a href="#admin-main-content" className="skip-nav">ข้ามไปยังเนื้อหาหลัก</a>
     <aside className="admin-sidebar">
       <div className="admin-brand"><Link className="brand" href="/admin"><span className="brand-mark"><BookOpen size={18} /></span><span>Knowledge Hub</span></Link><small>Admin workspace</small></div>
       <nav className="admin-nav" aria-label="เมนูผู้ดูแล">
@@ -25,6 +26,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       </nav>
       <div className="admin-user"><div className="avatar">KH</div><div><strong>Knowledge Owner</strong><span>Owner</span></div><form action={logoutAction}><button className="icon-button" aria-label="ออกจากระบบ"><LogOut size={14} /></button></form></div>
     </aside>
-    <section className="admin-main"><header className="admin-topbar"><div className="admin-top-title"><AdminMobileNav /><h1>พื้นที่จัดการความรู้</h1></div><div className="admin-top-actions"><Link className="icon-button" href="/admin/content" aria-label="ค้นหาเนื้อหา"><Search size={16} /></Link><Link className="primary-button" href="/admin/content/new">+ สร้างบทความ</Link></div></header>{children}</section>
+    <section id="admin-main-content" className="admin-main"><header className="admin-topbar"><div className="admin-top-title"><AdminMobileNav /><h1>พื้นที่จัดการความรู้</h1></div><div className="admin-top-actions"><Link className="icon-button" href="/admin/content" aria-label="ค้นหาเนื้อหา"><Search size={16} /></Link><Link className="primary-button" href="/admin/content/new">+ สร้างบทความ</Link></div></header>{children}</section>
   </div>;
 }

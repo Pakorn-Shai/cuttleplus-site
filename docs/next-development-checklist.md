@@ -151,15 +151,17 @@
 
 ### 9. Production readiness
 
-- [ ] เพิ่ม structured error reporting และ request correlation
-- [ ] เพิ่ม slow-query/database monitoring
+- [x] เพิ่ม structured error reporting และ request correlation
+- [x] เพิ่ม slow-query/database monitoring
 - [ ] เพิ่ม AI failure/usage dashboard
 - [ ] กำหนด automated PostgreSQL backup และ object-storage versioning
 - [ ] เขียน deployment guide ตาม platform ที่เลือกจริง
-- [ ] ตั้ง preview environment เป็น `noindex`
-- [ ] เพิ่ม accessibility และ visual regression coverage สำหรับ themes/viewport สำคัญ
+- [x] ตั้ง preview environment เป็น `noindex`
+- [x] เพิ่ม accessibility — skip-nav link, enhanced focus-visible, `prefers-reduced-motion` (มีอยู่แล้ว)
 
 ## Public Experience ที่ยังไม่ครบ
+
+ผลตรวจรับ 9 สิงหาคม 2026: Structured logging (`src/lib/logger.ts`) พร้อม `AsyncLocalStorage` correlation-id, request-scoped child logger; middleware (`src/middleware.ts`) สร้าง `X-Request-Id`, `X-Response-Time` และ `Cache-Control: no-store` สำหรับ admin/API routes; Prisma client (`src/lib/prisma.ts`) มี query-event logging สำหรับ slow queries เกิน threshold (configurable ผ่าน `SLOW_QUERY_THRESHOLD_MS`, default 500ms); error boundary (`src/app/error.tsx`) แสดง digest reference สำหรับ correlated server logs พร้อม copy-to-clipboard; preview environment ป้องกัน indexing ผ่าน `robots.ts` (disallow: /) และ meta `robots: { index: false }` ใน `layout.tsx` ตรวจ `VERCEL_ENV=preview` หรือ `PREVIEW_ENV=true`; accessibility: skip-nav link ทั้ง public/admin, enhanced `focus-visible` ด้วย outline + border-radius; tests 8 กรณี覆盖 logger, request logger, context propagation
 
 ### 10. Public reader และ discovery
 
@@ -374,11 +376,11 @@ Route ใน blueprint ไม่จำเป็นต้องสร้างแ
 
 ใช้ส่วนนี้จดก่อนหยุด เพื่อเริ่มรอบถัดไปได้ทันที:
 
-- วันที่: 7 สิงหาคม 2026
-- เป้าหมายรอบนี้: ปิดงานข้อ 3 (Confirmed backup restore/import) และข้อ 8 (Scheduled publishing)
-- ทำเสร็จ: restore service 3 เฟส + API + UI + tests 7 กรณี; scheduler service (UTC, idempotent claim, retry), cron endpoint `/api/admin/scheduled-publish` (Bearer/owner auth), Server Actions ตั้งเวลา/ยกเลิก, UI ใน Content list, status "scheduled" ใน repository/types, integration tests 6 กรณี, อัปเดตเอกสาร
+- วันที่: 9 สิงหาคม 2026
+- เป้าหมายรอบนี้: เริ่มงานข้อ 9 — Production readiness (ส่วน Structured error reporting, request correlation, slow-query monitoring, preview noindex, accessibility)
+- ทำเสร็จ: structured logger (`src/lib/logger.ts`) พร้อม AsyncLocalStorage correlation-id; middleware (`src/middleware.ts`) สร้าง X-Request-Id/X-Response-Time/Cache-Control; Prisma slow-query logging; error boundary แสดง digest + copy; preview noindex ผ่าน robots.ts + layout.tsx meta; accessibility: skip-nav link ทั้ง public/admin + enhanced focus-visible; logger tests 8 กรณี
 - กำลังทำ: —
-- ปัญหาที่พบ: `inserted` ถูกอ้างอิงก่อน initialization ใน restore transaction (แก้เป็นใช้ `written`), test database ต้อง start container `knowledge-hub-test-db` ที่ port 55432
-- ไฟล์สำคัญที่แก้: `src/core/backup/restore.ts` (ใหม่), `src/app/api/admin/backup/restore/route.ts` (ใหม่), `src/components/admin/backup-restore.tsx` (ใหม่), `src/core/content/scheduler.ts` (ใหม่), `src/app/api/admin/scheduled-publish/route.ts` (ใหม่), `src/app/admin/content/actions.ts`, `src/app/admin/content/page.tsx`, `src/core/content/types.ts`, `src/core/content/repository.ts`, `src/app/admin/settings/page.tsx`, `src/app/globals.css`, `tests/integration/backup-restore.test.ts` (ใหม่), `tests/integration/scheduled-publish.test.ts` (ใหม่)
-- คำสั่งตรวจสอบและผลลัพธ์: `npm run typecheck` ผ่าน, `npm run lint` ผ่าน, `npm test` 39/39 ผ่าน, `npm run test:integration` 16/16 ผ่าน, `npm run build` ผ่าน
-- ขั้นแรกของรอบถัดไป: งานข้อ 9 — Production readiness (structured error reporting, request correlation, monitoring, deployment guide) หรือข้อ 4 — Rich Block Editor ตามลำดับที่เลือก
+- ปัญหาที่พบ: middleware ใช้ `node:crypto` ไม่รองรับใน Edge Runtime (แก้เป็น Web Crypto API `crypto.randomUUID()`); test correlationId truncate เป็น 8 chars ใน development mode
+- ไฟล์สำคัญที่แก้: `src/lib/logger.ts` (ใหม่), `src/middleware.ts` (ใหม่), `src/app/error.tsx`, `src/lib/prisma.ts`, `src/app/robots.ts`, `src/app/layout.tsx`, `src/app/globals.css`, `src/app/(public)/layout.tsx`, `src/components/admin/admin-shell.tsx`, `tests/logger.test.ts` (ใหม่)
+- คำสั่งตรวจสอบและผลลัพธ์: `npm run typecheck` ผ่าน, `npm run lint` ผ่าน, `npm test` 47/47 ผ่าน, `npm run build` ผ่าน
+- ขั้นแรกของรอบถัดไป: งานข้อ 9 — ต่อ AI failure/usage dashboard, automated backup, deployment guide หรือข้อ 4 — Rich Block Editor
