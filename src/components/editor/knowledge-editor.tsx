@@ -6,7 +6,7 @@ import { BlockNoteSchema, type PartialBlock } from "@blocknote/core";
 import { filterSuggestionItems, insertOrUpdateBlockForSlashMenu } from "@blocknote/core/extensions";
 import { BlockNoteView } from "@blocknote/mantine";
 import { getDefaultReactSlashMenuItems, SuggestionMenuController, useCreateBlockNote } from "@blocknote/react";
-import { ArrowLeft, Braces, Check, Database, Download, Eye, History, Sparkles, Workflow } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Braces, Check, ChevronDown, Database, Download, Eye, History, Image, Link2, Quote, Sparkles, Workflow } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -100,6 +100,11 @@ export function KnowledgeEditor({ initialDraft, taxonomy }: { initialDraft?: Edi
       { title: "Executable SQL", subtext: "Run with DuckDB or SQLite and save reviewed output", aliases: ["sql", "duckdb", "sqlite"], group: "Learning Examples", icon: <Database size={18} />, onItemClick: () => insertOrUpdateBlockForSlashMenu(editor, learningBlockToEditorBlock(createLearningBlock("executable-code")) as never) },
       { title: "Formula Example", subtext: "DAX, Power Query M, Excel, or Google Sheets", aliases: ["formula", "dax", "excel"], group: "Learning Examples", icon: <Braces size={18} />, onItemClick: () => insertOrUpdateBlockForSlashMenu(editor, learningBlockToEditorBlock(createLearningBlock("formula-example")) as never) },
       { title: "Automation Script", subtext: "VBA or Google Apps Script with saved output", aliases: ["vba", "apps script", "automation"], group: "Learning Examples", icon: <Workflow size={18} />, onItemClick: () => insertOrUpdateBlockForSlashMenu(editor, learningBlockToEditorBlock(createLearningBlock("automation-script")) as never) },
+      { title: "Callout", subtext: "Highlight note, tip, or warning", aliases: ["note", "tip", "warning", "aside"], group: "Rich Blocks", icon: <AlertTriangle size={18} />, onItemClick: () => editor.insertBlocks([{ type: "calloutBlock", props: { tone: "note", title: "Note" }, content: [{ type: "text", text: "ข้อความ callout", styles: {} }] }] as never, editor.document.at(-1)!, "after") },
+      { title: "Toggle", subtext: "Collapsible section for details", aliases: ["details", "collapse", "expand"], group: "Rich Blocks", icon: <ChevronDown size={18} />, onItemClick: () => editor.insertBlocks([{ type: "toggleBlock", props: { title: "คลิกเพื่อเปิด", open: false }, content: [{ type: "text", text: "เนื้อหาที่ซ่อนอยู่", styles: {} }] }] as never, editor.document.at(-1)!, "after") },
+      { title: "Quote", subtext: "Blockquote with optional attribution", aliases: ["blockquote", "cite"], group: "Rich Blocks", icon: <Quote size={18} />, onItemClick: () => editor.insertBlocks([{ type: "quoteBlock", props: { attribution: "" }, content: [{ type: "text", text: "ข้อความอ้างอิง", styles: {} }] }] as never, editor.document.at(-1)!, "after") },
+      { title: "Image", subtext: "Embed image from URL or Media Library", aliases: ["img", "picture", "photo"], group: "Rich Blocks", icon: <Image size={18} />, onItemClick: () => editor.insertBlocks([{ type: "imageBlock", props: { src: "", alt: "", caption: "", width: 0, height: 0 } }] as never, editor.document.at(-1)!, "after") },
+      { title: "Embed", subtext: "YouTube, Vimeo, or external link", aliases: ["youtube", "video", "iframe"], group: "Rich Blocks", icon: <Link2 size={18} />, onItemClick: () => editor.insertBlocks([{ type: "embedBlock", props: { url: "", embedType: "youtube", caption: "" } }] as never, editor.document.at(-1)!, "after") },
     ];
   }
 

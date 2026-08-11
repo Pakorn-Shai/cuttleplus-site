@@ -13,6 +13,9 @@ export const contentBlockSchema = z.discriminatedUnion("type", [
   z.object({ id: z.string(), type: z.literal("callout"), tone: z.enum(["note", "tip", "warning"]), title: z.string(), text: z.string() }),
   z.object({ id: z.string(), type: z.literal("code"), language: z.string(), filename: z.string().optional(), code: z.string() }),
   z.object({ id: z.string(), type: z.literal("toggle"), title: z.string(), text: z.string(), open: z.boolean().optional() }),
+  z.object({ id: z.string(), type: z.literal("quote"), text: z.string(), attribution: z.string().optional() }),
+  z.object({ id: z.string(), type: z.literal("image"), src: z.string(), alt: z.string(), caption: z.string().optional(), width: z.number().optional(), height: z.number().optional() }),
+  z.object({ id: z.string(), type: z.literal("embed"), url: z.string(), embedType: z.enum(["youtube", "vimeo", "other"]), caption: z.string().optional() }),
   z.object({ id: z.string(), type: z.literal("list"), items: z.array(z.string()) }),
   z.object({
     id: z.string(), type: z.literal("executable-code"), language: z.enum(["sql", "javascript"]),
@@ -33,4 +36,16 @@ export const contentBlockSchema = z.discriminatedUnion("type", [
     permissions: z.array(z.string().max(500)).max(50).optional(), triggers: z.array(z.string().max(500)).max(50).optional(), input: structuredOutputSchema.optional(), output: structuredOutputSchema.optional(),
     executionMode: z.enum(["saved-output", "preview-only"]), verifiedAt: z.string().datetime().optional(),
   }),
+  // AEO blocks (Answer Engine Optimization)
+  z.object({ id: z.string(), type: z.literal("summary"), text: z.string().max(5000) }),
+  z.object({ id: z.string(), type: z.literal("direct-answer"), text: z.string().max(2000) }),
+  z.object({ id: z.string(), type: z.literal("takeaways"), items: z.array(z.string().max(500)).max(20) }),
+  z.object({ id: z.string(), type: z.literal("definition"), term: z.string().max(200), text: z.string().max(5000) }),
+  z.object({ id: z.string(), type: z.literal("steps"), title: z.string().max(240).optional(), items: z.array(z.object({ step: z.string().max(2000), detail: z.string().max(5000).optional() })).max(50) }),
+  z.object({ id: z.string(), type: z.literal("faq"), items: z.array(z.object({ question: z.string().max(500), answer: z.string().max(5000) })).max(50) }),
+  z.object({ id: z.string(), type: z.literal("mistakes"), title: z.string().max(240).optional(), items: z.array(z.string().max(2000)).max(30) }),
+  z.object({ id: z.string(), type: z.literal("limitations"), title: z.string().max(240).optional(), items: z.array(z.string().max(2000)).max(30) }),
+  // Bookmark and attachment blocks
+  z.object({ id: z.string(), type: z.literal("bookmark"), url: z.string().max(2000), title: z.string().max(500), description: z.string().max(2000).optional(), favicon: z.string().max(2000).optional() }),
+  z.object({ id: z.string(), type: z.literal("attachment"), url: z.string().max(2000), fileName: z.string().max(500), fileSize: z.number().optional(), mimeType: z.string().max(200).optional() }),
 ]);

@@ -46,6 +46,32 @@ const blockRegistry: Record<ContentBlock["type"], RuntimeBlockDefinition> = {
     safeHtml: (block) => `<details${block.open ? " open" : ""}><summary>${escapeText(block.title)}</summary><p>${escapeText(block.text)}</p></details>`,
     markdown: (block) => `<details${block.open ? " open" : ""}>\n<summary>${block.title}</summary>\n\n${block.text}\n\n</details>`,
   }),
+  quote: defineBlock<Extract<ContentBlock, { type: "quote" }>>({
+    plainText: (block) => `"${block.text}"${block.attribution ? ` — ${block.attribution}` : ""}`,
+    safeHtml: (block) => `<blockquote><p>${escapeText(block.text)}</p>${block.attribution ? `<cite>${escapeText(block.attribution)}</cite>` : ""}</blockquote>`,
+    markdown: (block) => `> ${block.text.replace(/\n/g, "\n> ")}${block.attribution ? `\n>\n> — ${block.attribution}` : ""}`,
+  }),
+  image: defineBlock<Extract<ContentBlock, { type: "image" }>>({
+    plainText: (block) => `[Image: ${block.alt}]`,
+    safeHtml: (block) => {
+      const sizeAttrs = block.width && block.height ? ` width="${block.width}" height="${block.height}"` : "";
+      return `<figure><img src="${escapeAttribute(block.src)}" alt="${escapeAttribute(block.alt)}" loading="lazy"${sizeAttrs}>${block.caption ? `<figcaption>${escapeText(block.caption)}</figcaption>` : ""}</figure>`;
+    },
+    markdown: (block) => `![${block.alt}](${block.src})${block.caption ? `\n*${block.caption}*` : ""}`,
+  }),
+  embed: defineBlock<Extract<ContentBlock, { type: "embed" }>>({
+    plainText: (block) => `[Embed: ${block.url}]`,
+    safeHtml: (block) => {
+      const caption = block.caption ? `<figcaption>${escapeText(block.caption)}</figcaption>` : "";
+      if (block.embedType === "youtube") {
+        const videoId = extractYoutubeId(block.url);
+        if (!videoId) return `<figure><p><a href="${escapeAttribute(block.url)}" rel="noopener noreferrer" target="_blank">${escapeText(block.url)}</a></p>${caption}</figure>`;
+        return `<figure><div class="embed-responsive"><iframe src="https://www.youtube-nocookie.com/embed/${videoId}" title="YouTube video player" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>${caption}</figure>`;
+      }
+      return `<figure><p><a href="${escapeAttribute(block.url)}" rel="noopener noreferrer" target="_blank">${escapeText(block.url)}</a></p>${caption}</figure>`;
+    },
+    markdown: (block) => `[${block.embedType}: ${block.url}](${block.url})${block.caption ? `\n*${block.caption}*` : ""}`,
+  }),
   code: defineBlock<Extract<ContentBlock, { type: "code" }>>({
     plainText: (block) => block.code,
     safeHtml: (block) => {
@@ -73,6 +99,58 @@ const blockRegistry: Record<ContentBlock["type"], RuntimeBlockDefinition> = {
     plainText: (block) => `${block.title}\n${block.code}\n${block.hostRequirements.join(" ")}\n${outputPlainText(block.input)}\n${outputPlainText(block.output)}`,
     safeHtml: (block) => learningBlockHtml({ label: block.platform, title: block.title, code: block.code, input: block.input, output: block.output, metadata: automationMetadata(block) }),
     markdown: (block) => learningBlockMarkdown(block.title, block.platform, block.code, block.output, automationMetadata(block), block.input),
+  }),
+  // AEO blocks
+  summary: defineBlock<Extract<ContentBlock, { type: "summary" }>>({
+    plainText: (block) => block.text,
+    safeHtml: (block) => `<section class="aeo-summary"><h2>Summary</h2><p>${escapeText(block.text)}</p></section>`,
+    markdown: (block) => `## Summary\n\n${block.text}`,
+  }),
+  "direct-answer": defineBlock<Extract<ContentBlock, { type: "direct-answer" }>>({
+    plainText: (block) => block.text,
+    safeHtml: (block) => `<section class="aeo-direct-answer"><p>${escapeText(block.text)}</p></section>`,
+    markdown: (block) => `> ${block.text.replace(/\n/g, "\n> ")}`,
+  }),
+  takeaways: defineBlock<Extract<ContentBlock, { type: "takeaways" }>>({
+    plainText: (block) => block.items.join(" "),
+    safeHtml: (block) => `<section class="aeo-takeaways"><h2>Key Takeaways</h2><ul>${block.items.map((item) => `<li>${escapeText(item)}</li>`).join("")}</ul></section>`,
+    markdown: (block) => `## Key Takeaways\n\n${block.items.map((item) => `- ${item}`).join("\n")}`,
+  }),
+  definition: defineBlock<Extract<ContentBlock, { type: "definition" }>>({
+    plainText: (block) => `${block.term}: ${block.text}`,
+    safeHtml: (block) => `<section class="aeo-definition"><dl><dt>${escapeText(block.term)}</dt><dd>${escapeText(block.text)}</dd></dl></section>`,
+    markdown: (block) => `**${block.term}**: ${block.text}`,
+  }),
+  steps: defineBlock<Extract<ContentBlock, { type: "steps" }>>({
+    plainText: (block) => block.items.map((item) => `${item.step}${item.detail ? ` — ${item.detail}` : ""}`).join(" "),
+    safeHtml: (block) => `<section class="aeo-steps">${block.title ? `<h2>${escapeText(block.title)}</h2>` : ""}<ol>${block.items.map((item) => `<li><strong>${escapeText(item.step)}</strong>${item.detail ? `<p>${escapeText(item.detail)}</p>` : ""}</li>`).join("")}</ol></section>`,
+    markdown: (block) => `${block.title ? `## ${block.title}\n\n` : ""}${block.items.map((item, i) => `${i + 1}. **${item.step}**${item.detail ? `\n   ${item.detail}` : ""}`).join("\n")}`,
+  }),
+  faq: defineBlock<Extract<ContentBlock, { type: "faq" }>>({
+    plainText: (block) => block.items.map((item) => `${item.question} ${item.answer}`).join(" "),
+    safeHtml: (block) => `<section class="aeo-faq">${block.items.map((item) => `<details><summary>${escapeText(item.question)}</summary><p>${escapeText(item.answer)}</p></details>`).join("")}</section>`,
+    markdown: (block) => block.items.map((item) => `### ${item.question}\n\n${item.answer}`).join("\n\n"),
+  }),
+  mistakes: defineBlock<Extract<ContentBlock, { type: "mistakes" }>>({
+    plainText: (block) => block.items.join(" "),
+    safeHtml: (block) => `<section class="aeo-mistakes">${block.title ? `<h2>${escapeText(block.title)}</h2>` : "<h2>Common Mistakes</h2>"}<ul>${block.items.map((item) => `<li>${escapeText(item)}</li>`).join("")}</ul></section>`,
+    markdown: (block) => `## ${block.title || "Common Mistakes"}\n\n${block.items.map((item) => `- ❌ ${item}`).join("\n")}`,
+  }),
+  limitations: defineBlock<Extract<ContentBlock, { type: "limitations" }>>({
+    plainText: (block) => block.items.join(" "),
+    safeHtml: (block) => `<section class="aeo-limitations">${block.title ? `<h2>${escapeText(block.title)}</h2>` : "<h2>Limitations</h2>"}<ul>${block.items.map((item) => `<li>${escapeText(item)}</li>`).join("")}</ul></section>`,
+    markdown: (block) => `## ${block.title || "Limitations"}\n\n${block.items.map((item) => `- ⚠️ ${item}`).join("\n")}`,
+  }),
+  // Bookmark and attachment blocks
+  bookmark: defineBlock<Extract<ContentBlock, { type: "bookmark" }>>({
+    plainText: (block) => `[Bookmark: ${block.title}](${block.url})`,
+    safeHtml: (block) => `<a class="bookmark-card" href="${escapeAttribute(block.url)}" target="_blank" rel="noopener noreferrer">${block.favicon ? `<img src="${escapeAttribute(block.favicon)}" alt="" width="16" height="16" loading="lazy">` : ""}<div><strong>${escapeText(block.title)}</strong>${block.description ? `<span>${escapeText(block.description)}</span>` : ""}</div></a>`,
+    markdown: (block) => `[${block.title}](${block.url})${block.description ? `\n> ${block.description}` : ""}`,
+  }),
+  attachment: defineBlock<Extract<ContentBlock, { type: "attachment" }>>({
+    plainText: (block) => `[Attachment: ${block.fileName}](${block.url})`,
+    safeHtml: (block) => `<a class="attachment-card" href="${escapeAttribute(block.url)}" target="_blank" rel="noopener noreferrer"><strong>${escapeText(block.fileName)}</strong>${block.fileSize ? `<span>${formatFileSize(block.fileSize)}</span>` : ""}${block.mimeType ? `<span>${escapeText(block.mimeType)}</span>` : ""}</a>`,
+    markdown: (block) => `[${block.fileName}](${block.url})${block.fileSize ? ` (${formatFileSize(block.fileSize)})` : ""}`,
   }),
 };
 
@@ -153,4 +231,21 @@ function escapeText(value: string) {
 
 function escapeAttribute(value: string) {
   return escapeHtml(value).replace(/\s+/g, "-");
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function extractYoutubeId(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === "youtu.be") return parsed.pathname.slice(1).split("/")[0] || null;
+    if (parsed.hostname.includes("youtube.com")) return parsed.searchParams.get("v");
+    return null;
+  } catch {
+    return null;
+  }
 }

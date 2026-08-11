@@ -195,6 +195,7 @@ model Series {
   name        String
   slug        String       @unique
   description String?
+  coverUrl    String?
   visibility  Visibility   @default(PRIVATE)
   items       SeriesItem[]
   createdAt   DateTime     @default(now())

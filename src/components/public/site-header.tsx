@@ -6,7 +6,13 @@ import { BookOpen, Menu, Moon, Search, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { applyColorMode, COLOR_MODE_EVENT, getPreferredColorMode, type ColorMode } from "@/lib/color-mode";
 
-export function SiteHeader({ siteName = "Knowledge Hub" }: { siteName?: string }) {
+interface NavItem {
+  label: string;
+  url: string;
+  visible: boolean;
+}
+
+export function SiteHeader({ siteName = "Knowledge Hub", navigationItems }: { siteName?: string; navigationItems?: NavItem[] }) {
   const [mode, setMode] = useState<ColorMode>("light");
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -26,12 +32,17 @@ export function SiteHeader({ siteName = "Knowledge Hub" }: { siteName?: string }
       <nav className="public-nav container" aria-label="เมนูหลัก">
         <Link className="brand" href="/"><span className="brand-mark"><BookOpen size={18} /></span><span>{siteName}</span></Link>
         <div className={`nav-links ${menuOpen ? "open" : ""}`} id="public-mobile-menu">
-          <Link href="/knowledge" onClick={() => setMenuOpen(false)}>คลังความรู้</Link>
-          <Link href="/categories" onClick={() => setMenuOpen(false)}>หมวดหมู่</Link>
-          <Link href={"/tags" as Route} onClick={() => setMenuOpen(false)}>แท็ก</Link>
-          <Link href={"/series" as Route} onClick={() => setMenuOpen(false)}>Series</Link>
-          <Link href="/search" onClick={() => setMenuOpen(false)}>ค้นหา</Link>
-          <Link href="/about" onClick={() => setMenuOpen(false)}>เกี่ยวกับฉัน</Link>
+          {navigationItems && navigationItems.length > 0
+            ? navigationItems.filter((item) => item.visible).map((item) => <Link href={item.url as Route} onClick={() => setMenuOpen(false)} key={item.url}>{item.label}</Link>)
+            : <>
+              <Link href="/knowledge" onClick={() => setMenuOpen(false)}>คลังความรู้</Link>
+              <Link href="/categories" onClick={() => setMenuOpen(false)}>หมวดหมู่</Link>
+              <Link href={"/tags" as Route} onClick={() => setMenuOpen(false)}>แท็ก</Link>
+              <Link href={"/series" as Route} onClick={() => setMenuOpen(false)}>Series</Link>
+              <Link href="/search" onClick={() => setMenuOpen(false)}>ค้นหา</Link>
+              <Link href="/about" onClick={() => setMenuOpen(false)}>เกี่ยวกับฉัน</Link>
+            </>
+          }
         </div>
         <div className="nav-actions">
           <Link className="icon-button" href="/search" aria-label="ค้นหา"><Search size={17} /></Link>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Archive, BookOpen, Boxes, FileText, FolderTree, Image, Inbox, LayoutDashboard, ListOrdered, LogOut, Palette, Search, Settings, Sparkles, Tags } from "lucide-react";
+import { Archive, BookOpen, Boxes, FileText, FolderTree, Image, Inbox, LayoutDashboard, ListOrdered, LogOut, Palette, Search, Settings, Shield, Sparkles, Tags } from "lucide-react";
 import type { Route } from "next";
 import { logoutAction } from "@/app/login/actions";
 import { AdminMobileNav } from "./admin-mobile-nav";
@@ -21,6 +21,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         {manageLinks.map(([label, href, Icon]) => <Link href={href as Route} key={href}><Icon size={17} /><span>{label}</span></Link>)}
         <p className="admin-nav-label">ระบบ</p>
         <Link href="/admin/settings"><Settings size={17} /><span>ตั้งค่าเว็บไซต์</span></Link>
+        <Link href={"/admin/audit" as Route}><Shield size={17} /><span>Audit Log</span></Link>
         <Link href="/"><Archive size={17} /><span>เปิดหน้าบ้าน</span></Link>
       </nav>
       <div className="admin-user"><div className="avatar">KH</div><div><strong>Knowledge Owner</strong><span>Owner</span></div><form action={logoutAction}><button className="icon-button" aria-label="ออกจากระบบ"><LogOut size={14} /></button></form></div>

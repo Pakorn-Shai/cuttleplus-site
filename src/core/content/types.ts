@@ -26,6 +26,7 @@ export interface SeriesSummary {
   name: string;
   slug: string;
   description: string;
+  coverUrl?: string;
   contentCount: number;
 }
 
@@ -55,6 +56,26 @@ export interface CollectionDetail extends CollectionSummary {
   items: Array<{ content: KnowledgeContent; note: string }>;
 }
 
+export interface SourceSummary {
+  id: string;
+  url: string;
+  title: string | null;
+  author: string | null;
+  publisher: string | null;
+  publishedAt: string | null;
+  accessedAt: string | null;
+  sourceType: string | null;
+  note: string | null;
+  verified: boolean;
+}
+
+export interface RelatedContentSummary {
+  id: string;
+  title: string;
+  slug: string;
+  relationType: string;
+}
+
 export interface KnowledgeContent {
   id: string;
   title: string;
@@ -72,4 +93,6 @@ export interface KnowledgeContent {
   featured?: boolean;
   blocks: ContentBlock[];
   headings: { id: string; level: 2 | 3; text: string }[];
+  sources?: SourceSummary[];
+  relatedContent?: RelatedContentSummary[];
 }

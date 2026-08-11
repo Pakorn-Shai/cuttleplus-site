@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createReadabilitySuggestion } from "@/core/ai/service";
+import type { AIRewriteMode, AIAction } from "@/core/ai/openrouter";
+import { getSiteSettings } from "@/core/site/settings";
 import { getOwnerSession } from "@/lib/auth";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { hasTrustedOrigin } from "@/lib/request-security";
 
-const requestSchema = z.object({ contentId: z.string().cuid() });
+const requestSchema = z.object({
+  contentId: z.string().cuid(),
+  mode: z.enum(["default", "concise", "tutorial", "beginner", "technical", "public", "proofread"]).optional(),
+  action: z.enum(["rewrite", "summarize", "expand", "shorten", "explain", "steps", "checklist", "faq", "takeaways"]).optional(),
+});
 
 export async function POST(request: Request) {
   const owner = await getOwnerSession();
@@ -15,8 +21,15 @@ export async function POST(request: Request) {
   if (!rateLimit.allowed) return NextResponse.json({ error: "AI request limit reached" }, { status: 429, headers: { "Retry-After": String(rateLimit.retryAfter) } });
   const parsed = requestSchema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: "Invalid content" }, { status: 400 });
+
+  // Check monthly budget before proceeding
+  const settings = await getSiteSettings();
+  if (settings.aiMonthlyBudgetUsd > 0 && settings.aiUsageThisMonthUsd >= settings.aiMonthlyBudgetUsd) {
+    return NextResponse.json({ error: `Monthly AI budget reached ($${settings.aiMonthlyBudgetUsd.toFixed(2)}). Increase budget in Settings or wait for next month.`, code: "budget_exceeded" }, { status: 429 });
+  }
+
   try {
-    return NextResponse.json({ suggestion: await createReadabilitySuggestion(parsed.data.contentId) }, { status: 201 });
+    return NextResponse.json({ suggestion: await createReadabilitySuggestion(parsed.data.contentId, { mode: parsed.data.mode as AIRewriteMode, action: parsed.data.action as AIAction }) }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     if (message === "CONTENT_NOT_FOUND") return NextResponse.json({ error: "Content not found" }, { status: 404 });

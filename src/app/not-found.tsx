@@ -1,6 +1,17 @@
 import Link from "next/link";
-import { SearchX } from "lucide-react";
+import { Home, SearchX } from "lucide-react";
 
 export default function NotFound() {
-  return <main className="empty-state" style={{ minHeight: "100vh", display: "grid", placeContent: "center", border: 0 }}><SearchX size={48} /><h1>ไม่พบหน้าที่กำลังค้นหา</h1><p>ลิงก์อาจถูกย้าย หรือเนื้อหานี้เป็น Private</p><Link className="primary-button" href="/knowledge">กลับไปคลังความรู้</Link></main>;
+  return <main className="not-found-page">
+    <div className="not-found-content">
+      <span className="not-found-code">404</span>
+      <SearchX size={52} strokeWidth={1.5} />
+      <h1>ไม่พบหน้าที่กำลังค้นหา</h1>
+      <p>ลิงก์อาจถูกย้าย หมดอายุ หรือเนื้อหานี้เป็น Private</p>
+      <div className="not-found-actions">
+        <Link className="primary-button" href="/knowledge"><Home size={16} /> กลับไปคลังความรู้</Link>
+        <Link className="secondary-button" href="/search">ค้นหา</Link>
+      </div>
+    </div>
+  </main>;
 }

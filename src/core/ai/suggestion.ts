@@ -22,13 +22,17 @@ export function applyReadabilitySuggestion(blocks: ContentBlock[], suggestion: R
   const changes = new Map(suggestion.changes.map((change) => [change.blockId, change]));
   return blocks.map((block) => {
     const change = changes.get(block.id);
-    if (!change || block.type === "code" || block.type === "executable-code" || block.type === "formula-example" || block.type === "automation-script") return block;
-    if (block.type === "paragraph" || block.type === "heading") return change.replacementText === null ? block : { ...block, text: change.replacementText };
+    if (!change || block.type === "code" || block.type === "executable-code" || block.type === "formula-example" || block.type === "automation-script" || block.type === "image" || block.type === "embed") return block;
+    if (block.type === "paragraph" || block.type === "heading" || block.type === "quote") return change.replacementText === null ? block : { ...block, text: change.replacementText };
     if (block.type === "list") return change.replacementItems === null ? block : { ...block, items: change.replacementItems };
-    return {
-      ...block,
-      title: change.replacementTitle ?? block.title,
-      text: change.replacementText ?? block.text,
-    };
+    // Remaining: callout, toggle — both have title + text
+    if (block.type === "callout" || block.type === "toggle") {
+      return {
+        ...block,
+        title: change.replacementTitle ?? block.title,
+        text: change.replacementText ?? block.text,
+      };
+    }
+    return block;
   });
 }

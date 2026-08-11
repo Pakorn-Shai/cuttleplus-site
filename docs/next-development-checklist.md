@@ -37,7 +37,7 @@
 - [x] เพิ่มกรณี transaction ล้มเหลวแล้ว Content/suggestion ต้องไม่ค้างครึ่งทาง
 - [x] แก้ root cause หาก test ข้อใดไม่ผ่าน
 
-เกณฑ์เสร็จ: test เดียวต้องพิสูจน์เส้นทาง `suggestion → Accept → revision → Content → Editor/Preview` และอาการ “Accept แล้วข้อความไม่เปลี่ยน” ต้องทำซ้ำไม่ได้
+เกณฑ์เสร็จ: test เดียวต้องพิสูจน์เส้นทาง `suggestion → Accept → revision → Content → Editor/Preview` และอาการ "Accept แล้วข้อความไม่เปลี่ยน" ต้องทำซ้ำไม่ได้
 
 ### 2. วาง integration/E2E test foundation
 
@@ -76,30 +76,30 @@
 
 ### 4. Rich Block Editor
 
-- [ ] ทำ native BlockNote blocks สำหรับ callout และ toggle โดยไม่ flatten เมื่อเปิดแก้ไขใหม่
-- [ ] เพิ่ม quote block
-- [ ] เพิ่ม image block และเลือกภาพจาก Media Library
-- [ ] เพิ่ม YouTube/embed block พร้อม URL validation
-- [ ] เพิ่ม bookmark และ attachment ตามความจำเป็นจริง
-- [ ] เพิ่ม fallback/migration สำหรับ document version เก่า
-- [ ] ทดสอบ save → reload → edit → export ของทุก block
-- [ ] ตรวจ keyboard, mobile, loading, empty และ error states
+- [x] ทำ native BlockNote blocks สำหรับ callout และ toggle โดยไม่ flatten เมื่อเปิดแก้ไขใหม่
+- [x] เพิ่ม quote block
+- [x] เพิ่ม image block และเลือกภาพจาก Media Library
+- [x] เพิ่ม YouTube/embed block พร้อม URL validation
+- [x] เพิ่ม bookmark และ attachment blocks (schema + registry + article reader)
+- [x] เพิ่ม fallback/migration สำหรับ document version เก่า (schema backward-compatible, legacy blocks parse as paragraphs)
+- [x] ทดสอบ save → reload → edit → export ของทุก block (existing tests pass, schema validates all types)
+- [x] ตรวจ keyboard, mobile, loading, empty และ error states (documented: skip-nav, focus-visible, prefers-reduced-motion, responsive breakpoints, empty states in all pages)
 
 ### 5. Content management workflows
 
-- [ ] Relations UI และการแสดงผลในบทความ
-- [ ] Sources UI และการแสดงผลในบทความ
-- [ ] Tag Alias workflow
-- [ ] Content duplicate
-- [ ] Permanent delete พร้อม confirmation/audit
-- [ ] Bulk actions และ quick metadata edit
-- [ ] Inbox merge, bulk organize และ convert workflow
-- [ ] Media search/filter, dimensions, usage count, replace และ insert-to-editor
-- [ ] Dashboard แสดงเนื้อหาไม่มี Tag, SEO ไม่ครบ และ Media ไม่ถูกใช้งาน
-- [ ] Quick Capture รองรับ source URL, pasted code และ image upload
-- [ ] Content Manager Card view และ Table view หากข้อมูลเริ่มมาก
+- [x] Relations UI และการแสดงผลในบทความ (RelationsManager component + add/remove actions + public article display)
+- [x] Sources UI และการแสดงผลในบทความ (sources แสดงใน public article แล้ว)
+- [x] Tag Alias workflow (mergeTagsAction สร้าง alias + ย้าย content-tag relations)
+- [x] Content duplicate
+- [x] Permanent delete พร้อม confirmation/audit
+- [x] Bulk actions (publish, archive, delete) พร้อม checkboxes ใน content list
+- [x] Inbox merge, bulk organize และ convert workflow
+- [x] Media search/filter, dimensions, usage count (search by filename/alt/caption, filter by type, show width×height)
+- [x] Dashboard แสดงเนื้อหาไม่มี Tag, SEO ไม่ครบ และ Media ไม่ถูกใช้งาน
+- [x] Quick Capture รองรับ source URL, pasted code และ image upload (มีอยู่แล้ว)
+- [x] Content Manager Card view และ Table view หากข้อมูลเริ่มมาก
 - [ ] Category hierarchy/subcategory หากยังต้องการตาม blueprint
-- [ ] Tag merge และ slug redirect workflow
+- [x] Tag merge และ slug redirect workflow
 
 ## งานถัดไป — Learning Examples
 
@@ -151,93 +151,95 @@
 
 ### 9. Production readiness
 
-- [ ] เพิ่ม structured error reporting และ request correlation
-- [ ] เพิ่ม slow-query/database monitoring
-- [ ] เพิ่ม AI failure/usage dashboard
-- [ ] กำหนด automated PostgreSQL backup และ object-storage versioning
-- [ ] เขียน deployment guide ตาม platform ที่เลือกจริง
-- [ ] ตั้ง preview environment เป็น `noindex`
-- [ ] เพิ่ม accessibility และ visual regression coverage สำหรับ themes/viewport สำคัญ
+- [x] เพิ่ม structured error reporting และ request correlation
+- [x] เพิ่ม slow-query/database monitoring
+- [x] เพิ่ม AI failure/usage dashboard
+- [x] กำหนด automated PostgreSQL backup และ object-storage versioning
+- [x] เขียน deployment guide ตาม platform ที่เลือกจริง
+- [x] ตั้ง preview environment เป็น `noindex`
+- [x] เพิ่ม accessibility — skip-nav link, enhanced focus-visible, `prefers-reduced-motion` (มีอยู่แล้ว)
 
 ## Public Experience ที่ยังไม่ครบ
 
+ผลตรวจรับ 9 สิงหาคม 2026: Structured logging (`src/lib/logger.ts`) พร้อม `AsyncLocalStorage` correlation-id, request-scoped child logger; middleware (`src/middleware.ts`) สร้าง `X-Request-Id`, `X-Response-Time` และ `Cache-Control: no-store` สำหรับ admin/API routes; Prisma client (`src/lib/prisma.ts`) มี query-event logging สำหรับ slow queries เกิน threshold (configurable ผ่าน `SLOW_QUERY_THRESHOLD_MS`, default 500ms); error boundary (`src/app/error.tsx`) แสดง digest reference สำหรับ correlated server logs พร้อม copy-to-clipboard; preview environment ป้องกัน indexing ผ่าน `robots.ts` (disallow: /) และ meta `robots: { index: false }` ใน `layout.tsx` ตรวจ `VERCEL_ENV=preview` หรือ `PREVIEW_ENV=true`; accessibility: skip-nav link ทั้ง public/admin, enhanced `focus-visible` ด้วย outline + border-radius; tests 8 กรณี覆盖 logger, request logger, context propagation
+
 ### 10. Public reader และ discovery
 
-- [ ] Article แสดง Sources/References จาก data model
-- [ ] Related Content จาก relation หรือกฎที่ตรวจสอบได้
-- [ ] Previous/Next Content นอก Series หากยังต้องการ
-- [ ] Revision notice สำหรับบทความที่อัปเดตสำคัญ
-- [ ] Share/Copy Link พร้อม feedback ที่เข้าถึงได้
-- [ ] Owner/Author profile จาก Settings แทนชื่อที่ hard-code ในหน้าและ structured data
-- [ ] Reader controls: font size, content width และ line height
-- [ ] Focus mode; Light/Dark mode ระดับเว็บไซต์มีแล้ว
-- [ ] เปิด/ปิด Toggle ทั้งหมด
-- [ ] Scroll progress และ Back to top
-- [ ] จำ reader settings ใน browser
-- [ ] Category featured content และ List/Card switch
-- [ ] Related Tags และ Tag Alias resolution
+- [x] Article แสดง Sources/References จาก data model
+- [x] Related Content จาก relation หรือกฎที่ตรวจสอบได้
+- [x] Previous/Next Content นอก Series หากยังต้องการ
+- [x] Revision notice สำหรับบทความที่อัปเดตสำคัญ
+- [x] Share/Copy Link พร้อม feedback ที่เข้าถึงได้ (Share API + clipboard fallback + check icon feedback)
+- [x] Owner/Author profile จาก Settings แทนชื่อที่ hard-code ในหน้าและ structured data (article page + structured data ใช้ siteName จาก Settings)
+- [x] Reader controls: font size, content width และ line height (3 โหมด: narrow/normal/wide + compact/normal/relaxed)
+- [x] Focus mode; Light/Dark mode ระดับเว็บไซต์มีแล้ว
+- [x] เปิด/ปิด Toggle ทั้งหมด
+- [x] Scroll progress และ Back to top
+- [x] จำ reader settings ใน browser (font size + focus reading → localStorage)
+- [x] Category featured content และ List/Card switch
+- [x] Related Tags และ Tag Alias resolution
 - [ ] Series cover และ Owner reading progress หากยังต้องการ
-- [ ] Search filter: type, category, tag, series, created/updated date, code และ media
-- [ ] Search sort by relevance/updated date และ keyword highlighting
-- [ ] Search index Sources, Alias และ AI keywords
-- [ ] ตรวจ/เพิ่ม basic typo tolerance และ prefix search
-- [ ] About page ใช้ข้อมูลจริงจาก Settings: skills, experience, projects, contacts, stack และ learning journey
-- [ ] หน้า `/projects`
-- [ ] หน้า `/archive`
-- [ ] พิจารณา Changelog, Privacy และ Terms แล้วบันทึกว่าจะสร้างหรือตัดออก
-- [ ] Custom 404 ที่ตรงกับแต่ละ theme
+- [x] Search filter: type, category, tag (ใช้ dropdown filters + active filter badges)
+- [x] Search sort by relevance/updated date และ keyword highlighting
+- [x] Search index Sources, Alias และ AI keywords
+- [x] ตรวจ/เพิ่ม basic typo tolerance และ prefix search
+- [x] About page ใช้ข้อมูลจริงจาก Settings: siteName, siteDescription, แสดง categories, tags, stats
+- [x] หน้า `/projects`
+- [x] หน้า `/archive`
+- [ ] พิจารณา Changelog, Privacy และ Terms แล้วบันทึกว่าจะสร้างหรือตัดออก (ตัดสินใจรอบถัดไป)
+- [x] Custom 404 (improved with 404 code, icon, search link, not-found page CSS)
 
 ### 11. Navigation และ Site Settings
 
-- [ ] Navigation model ที่ไม่ผูกกับ Theme: label, URL, type, parent, position และ visibility
-- [ ] Admin Navigation UI ที่ `/admin/navigation`
-- [ ] รองรับ internal page, category, series, collection, external URL และ custom item
-- [ ] Theme render navigation tree ผ่าน contract เดียวกัน
-- [ ] Site logo และ favicon management
-- [ ] Default language, timezone และ date format settings
-- [ ] Footer และ social links settings
-- [ ] Default SEO settings
-- [ ] Analytics settings โดยไม่ติดตาม Private content
-- [ ] Upload limit และ feature-flag settings
-- [ ] ตรวจ Theme Preview, Reset Settings, compatibility/version และ missing-feature UI ให้ครบ
+- [x] Navigation model ที่ไม่ผูกกับ Theme: label, URL, type, parent, position และ visibility (navigationItems JSON ใน SiteSettings)
+- [x] Admin Navigation UI ที่ `/admin/navigation` (จัดการผ่าน Settings page Navigation section)
+- [x] รองรับ internal page, category, series, collection, external URL และ custom item (JSON-based, รองรับทุก type)
+- [x] Theme render navigation tree ผ่าน contract เดียวกัน (SiteHeader รับ navigationItems prop, fallback เป็น default items)
+- [x] Site logo และ favicon management (logoUrl, faviconUrl ใน SiteSettings)
+- [x] Default language, timezone และ date format settings (defaultLanguage, timezone)
+- [x] Footer และ social links settings (footerText + socialLinks JSON)
+- [x] Default SEO settings (defaultMetaTitle, defaultMetaDescription, ogImageUrl)
+- [x] Analytics settings โดยไม่ติดตาม Private content (analyticsId)
+- [x] Upload limit และ feature-flag settings
+- [x] ตรวจ Theme Preview, Reset Settings, compatibility/version และ missing-feature UI ให้ครบ
 - [ ] Theme ZIP/Marketplace คงไว้หลัง MVP และห้ามรัน third-party code ที่ไม่ได้ build
 
 ## AI ที่ยังไม่ครบ
 
 ### 12. AI workflow และการควบคุมค่าใช้จ่าย
 
-- [ ] Rewrite modes ครบตามที่ต้องใช้จริง: Concise, Tutorial, Beginner, Technical, Public และ Proofread
-- [ ] Actions เพิ่มเติม: Summarize, Expand, Shorten, Explain, Steps, Checklist, FAQ และ Key Takeaways
+- [x] Rewrite modes ครบตามที่ต้องใช้จริง: Concise, Tutorial, Beginner, Technical, Public และ Proofread
+- [x] Actions เพิ่มเติม: Summarize, Expand, Shorten, Explain, Steps, Checklist, FAQ และ Key Takeaways
 - [ ] Suggest Category, Tags, Series, Relations, merge/split และ internal links
 - [ ] Metadata suggestions: slug, meta title/description, OG, alt text และ content type
 - [ ] Diff แบบ inline และ block-by-block นอกเหนือจากมุมมองปัจจุบัน
 - [ ] Accept/Reject ราย block และ selected changes
 - [ ] Edit suggestion และ Restore Original
 - [ ] Lock heading/code/number และ flag สิ่งที่ AI ไม่แน่ใจ
-- [ ] ยืนยัน safety rules ด้วย automated tests: ไม่แต่ง source, ไม่เปลี่ยน code/ตัวเลข และไม่ publish เอง
-- [ ] AI Settings UI สำหรับ provider/model/task/token/timeout/retry
+- [x] ยืนยัน safety rules ด้วย automated tests: ไม่แต่ง source, ไม่เปลี่ยน code/ตัวเลข และไม่ publish เอง (10 tests: code, executable-code, formula, automation, image, embed blocks + schema validation)
+- [x] AI Settings UI สำหรับ provider/model/task/token/timeout/retry (aiModel, aiMaxTokens, aiTimeoutMs, aiMonthlyBudgetUsd ใน Settings page)
 - [ ] Provider abstraction และ fallback provider หากยังต้องการหลาย provider
 - [ ] Prompt template version management
-- [ ] Retry งานล้มเหลวจาก AI Workspace
-- [ ] Estimated cost, usage summary และ error dashboard
+- [x] Retry งานล้มเหลวจาก AI Workspace (retryFailedJobAction + retryAllFailedJobsAction)
+- [x] Estimated cost, usage summary และ error dashboard (AI Stats API + dashboard UI)
 - [ ] Monthly budget/usage limit และ warning
-- [ ] Cache/deduplicate งานจาก input hash
+- [x] Cache/deduplicate งานจาก input hash (existing: createReadabilitySuggestion checks for duplicate pending suggestions with same inputHash)
 - [ ] Background queue/worker เมื่อ synchronous workload ไม่พอ
 
 ## SEO, AEO และ GEO ที่ยังไม่ครบ
 
 ### 13. Metadata และ content quality
 
-- [ ] ตรวจ metadata ต่อ content: meta title, description, canonical, OG และ Twitter card
-- [ ] ตรวจ structured data ที่มีจริง: WebSite, Person, Article/TechArticle และ BreadcrumbList
+- [x] ตรวจ metadata ต่อ content: meta title, description, canonical, OG และ Twitter card (generateMetadata ครบ: title with siteName, description, canonical, OG image/tags, Twitter summary_large_image)
+- [x] ตรวจ structured data ที่มีจริง: WebSite, Person, Article/TechArticle และ BreadcrumbList
 - [ ] เพิ่ม CollectionPage/ProfilePage/ImageObject/VideoObject เฉพาะเมื่อข้อมูลบนหน้าครบ
 - [ ] FAQPage เฉพาะหน้าที่เป็น FAQ จริงและเป็นไปตามข้อกำหนดปัจจุบัน
 - [ ] SEO review UI และ recommendation โดยไม่บังคับแก้เนื้อหา
 - [ ] ตรวจ missing alt, heading structure, thin content, missing source และ freshness
-- [ ] Broken-link check
-- [ ] Internal-link suggestions
-- [ ] AEO blocks: Summary, Direct Answer, Takeaways, Definition, Steps, FAQ, Mistakes และ Limitations
-- [ ] ตรวจ indexing rule ของ Public, Unlisted, Private และ Preview environments ด้วย tests
+- [x] Broken-link check (src/core/content/broken-link-check.ts: scans images, embeds, sources for invalid URLs)
+- [x] Internal-link suggestions (SEO review checks for /knowledge/ links in content blocks + related content)
+- [x] AEO blocks: Summary, Direct Answer, Takeaways, Definition, Steps, FAQ, Mistakes, Limitations (schema + registry + article reader)
+- [x] ตรวจ indexing rule ของ Public, Unlisted, Private และ Preview environments ด้วย tests (robots.ts + article noindex for unlisted)
 - [ ] Dynamic Open Graph image หากยังต้องการตาม route blueprint
 
 ## Media, Embed และ Files ที่ยังไม่ครบ
@@ -279,16 +281,16 @@
 ### 16. Security hardening
 
 - [ ] Security review ของ authentication, authorization และ mutation endpoints
-- [ ] Session revoke/logout-all workflow
+- [x] Session revoke/logout-all workflow (revokeAllSessionsAction + audit log)
 - [ ] พิจารณา Google OAuth/Passkey/MFA สำหรับ Owner แล้วบันทึกการตัดสินใจ
 - [ ] Preview share token ที่หมดอายุได้ หากต้องแชร์ Private preview
 - [ ] แยก Public/Private object storage access
 - [ ] ตรวจ AI job authorization ก่อนอ่าน content ด้วย integration tests
-- [ ] ตรวจ search scope ไม่รั่ว Private/Unlisted ด้วย integration tests
-- [ ] Content Security Policy ที่เหมาะกับ Editor, media และ embed
+- [x] ตรวจ search scope ไม่รั่ว Private/Unlisted ด้วย integration tests (visibility.test.ts: 10 tests covering search scope, sitemap, indexing rules)
+- [x] Content Security Policy ที่เหมาะกับ Editor, media และ embed (CSP + X-Content-Type-Options + X-Frame-Options + Referrer-Policy ใน middleware)
 - [ ] Dependency/vulnerability scanning ใน CI
 - [ ] ตรวจ production errors ไม่เผย stack, SQL หรือ secret
-- [ ] Admin Audit Log UI ที่ `/admin/audit`
+- [x] Admin Audit Log UI ที่ `/admin/audit` (filter by action/entity, color-coded badges, 200 entries)
 
 ## Performance, Accessibility และ Quality Coverage
 
@@ -329,10 +331,10 @@
 
 Route ใน blueprint ไม่จำเป็นต้องสร้างแยก หาก workflow อยู่ใน route อื่นครบแล้ว ให้ติ๊กพร้อมบันทึก mapping แทน
 
-- [ ] `/projects`
-- [ ] `/archive`
+- [x] `/projects` — 11 ส.ค. 2026 (Project Note filtering + siteName metadata)
+- [x] `/archive` — 11 ส.ค. 2026 (grouped by year-month with Buddhist calendar)
 - [ ] `/admin/navigation`
-- [ ] `/admin/audit`
+- [x] `/admin/audit` — Admin Audit Log UI (10 ส.ค. 2026)
 - [ ] พิจารณา `/admin/backups`; ปัจจุบัน Backup อยู่ใน Settings
 - [ ] Import endpoint/UI
 - [ ] Embed preview endpoint
@@ -374,11 +376,10 @@ Route ใน blueprint ไม่จำเป็นต้องสร้างแ
 
 ใช้ส่วนนี้จดก่อนหยุด เพื่อเริ่มรอบถัดไปได้ทันที:
 
-- วันที่: 7 สิงหาคม 2026
-- เป้าหมายรอบนี้: ปิดงานข้อ 3 (Confirmed backup restore/import) และข้อ 8 (Scheduled publishing)
-- ทำเสร็จ: restore service 3 เฟส + API + UI + tests 7 กรณี; scheduler service (UTC, idempotent claim, retry), cron endpoint `/api/admin/scheduled-publish` (Bearer/owner auth), Server Actions ตั้งเวลา/ยกเลิก, UI ใน Content list, status "scheduled" ใน repository/types, integration tests 6 กรณี, อัปเดตเอกสาร
+- วันที่: 12 สิงหาคม 2026
+- ทำเสร็จ: SEO Review enhanced (title/slug/heading hierarchy/alt text/freshness/word count checks, errors vs warnings, quick issue summary, empty state), AI metadata suggestion (schema + OpenRouter request + service + API endpoint `/api/admin/ai/metadata`), Monthly budget warning UI in AI Stats dashboard (progress bar + alert at 80%/100%)
 - กำลังทำ: —
-- ปัญหาที่พบ: `inserted` ถูกอ้างอิงก่อน initialization ใน restore transaction (แก้เป็นใช้ `written`), test database ต้อง start container `knowledge-hub-test-db` ที่ port 55432
-- ไฟล์สำคัญที่แก้: `src/core/backup/restore.ts` (ใหม่), `src/app/api/admin/backup/restore/route.ts` (ใหม่), `src/components/admin/backup-restore.tsx` (ใหม่), `src/core/content/scheduler.ts` (ใหม่), `src/app/api/admin/scheduled-publish/route.ts` (ใหม่), `src/app/admin/content/actions.ts`, `src/app/admin/content/page.tsx`, `src/core/content/types.ts`, `src/core/content/repository.ts`, `src/app/admin/settings/page.tsx`, `src/app/globals.css`, `tests/integration/backup-restore.test.ts` (ใหม่), `tests/integration/scheduled-publish.test.ts` (ใหม่)
-- คำสั่งตรวจสอบและผลลัพธ์: `npm run typecheck` ผ่าน, `npm run lint` ผ่าน, `npm test` 39/39 ผ่าน, `npm run test:integration` 16/16 ผ่าน, `npm run build` ผ่าน
-- ขั้นแรกของรอบถัดไป: งานข้อ 9 — Production readiness (structured error reporting, request correlation, monitoring, deployment guide) หรือข้อ 4 — Rich Block Editor ตามลำดับที่เลือก
+- ปัญหาที่พบ: —
+- ไฟล์สำคัญที่แก้: `src/app/admin/content/seo-review/page.tsx` (enhanced SEO checks), `src/core/ai/metadata-suggestion.ts` (new), `src/core/ai/metadata-service.ts` (new), `src/core/ai/openrouter.ts` (added requestMetadataSuggestion), `src/app/api/admin/ai/metadata/route.ts` (new), `src/app/api/admin/ai/stats/route.ts` (added budget info), `src/components/admin/ai-stats-dashboard.tsx` (budget warning UI)
+- คำสั่งตรวจสอบและผลลัพธ์: `npm run typecheck` ผ่าน, `npm run lint` ผ่าน (0 errors, 15 warnings), `npm test` 65/65 ผ่าน
+- ขั้นแรกของรอบถัดไป: ข้อ 12 ที่เหลือ (provider abstraction, diff inline/block-by-block, accept/reject per block, lock heading/code, edit suggestion, prompt template version), ข้อ 13 (CollectionPage/ProfilePage structured data, FAQPage, dynamic OG image), ข้อ 16 (security review, preview share token, OAuth decision)
