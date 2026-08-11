@@ -3,13 +3,13 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { buildContentArtifacts, createStoredDocument, parseStoredDocument, readerBlocksToEditorBlocks } from "@/core/content/document";
 import { prisma } from "@/lib/prisma";
-import { getOpenRouterModel, requestReadabilitySuggestion } from "./openrouter";
+import { getOpenRouterModel, requestAISuggestion, type AIRequestOptions } from "./openrouter";
 import { contentSnapshotHash, legacyContentSnapshotHash, matchesOriginalSuggestionSnapshot } from "./content-hash";
 import { applyReadabilitySuggestion, readabilitySuggestionSchema } from "./suggestion";
 
-const PROMPT_VERSION = "readability-v1";
+const PROMPT_VERSION = "readability-v2";
 
-export async function createReadabilitySuggestion(contentId: string) {
+export async function createReadabilitySuggestion(contentId: string, options?: AIRequestOptions) {
   const content = await prisma.content.findUnique({ where: { id: contentId }, include: { revisions: { orderBy: { revisionNumber: "desc" }, take: 1 } } });
   if (!content || content.deletedAt) throw new Error("CONTENT_NOT_FOUND");
   const inputHash = contentSnapshotHash(content);
@@ -19,7 +19,7 @@ export async function createReadabilitySuggestion(contentId: string) {
   const job = await prisma.aIJob.create({ data: { contentId, jobType: "READABILITY", provider: "openrouter", model, promptVersion: PROMPT_VERSION, inputHash, status: "RUNNING" } });
   const stored = parseStoredDocument(content.contentJson);
   try {
-    const result = await requestReadabilitySuggestion({ title: content.title, excerpt: content.excerpt ?? "", blocks: stored.readerBlocks });
+    const result = await requestAISuggestion({ title: content.title, excerpt: content.excerpt ?? "", blocks: stored.readerBlocks }, options);
     return await prisma.$transaction(async (tx) => {
       const suggestion = await tx.aISuggestion.create({ data: {
         contentId, revisionId: content.revisions[0]?.id, jobId: job.id, suggestionType: "READABILITY",

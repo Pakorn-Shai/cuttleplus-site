@@ -1,6 +1,7 @@
 import { Check, CircleX, Clock3, Sparkles } from "lucide-react";
 import { AIGenerateForm } from "@/components/admin/ai-generate-form";
 import { AIProviderCheck } from "@/components/admin/ai-provider-check";
+import { AIStatsDashboard } from "@/components/admin/ai-stats-dashboard";
 import { getOpenRouterModel } from "@/core/ai/openrouter";
 import { readabilitySuggestionSchema } from "@/core/ai/suggestion";
 import { prisma } from "@/lib/prisma";
@@ -51,5 +52,6 @@ export default async function AIWorkspacePage({ searchParams }: { searchParams: 
       {!suggestions.length && <div className="empty-state"><Sparkles size={32} /><h3>ไม่มี suggestion รอตรวจ</h3></div>}
     </section>
     <section className="admin-panel ai-job-panel"><div className="panel-head"><h3>งานล่าสุด</h3></div><div className="panel-body">{jobs.map((job) => <div className="ai-job-row" key={job.id}><Clock3 size={14} /><div><strong>{job.content?.title ?? "เนื้อหาถูกลบ"}</strong><span>{job.model} · {job.inputTokens ?? 0}/{job.outputTokens ?? 0} tokens</span>{job.errorMessage && <small className="ai-job-error">{job.errorMessage}</small>}</div><span className={`status-badge ${job.status.toLowerCase()}`}>{job.status.toLowerCase()}</span></div>)}{!jobs.length && <p className="muted">ยังไม่มีประวัติการเรียก AI</p>}</div></section>
+    <section className="admin-panel ai-stats-panel"><div className="panel-head"><h3>สถิติการใช้งาน AI</h3></div><div className="panel-body"><AIStatsDashboard /></div></section>
   </main>;
 }

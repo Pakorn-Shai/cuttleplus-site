@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import type { Route } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { KnowledgeCard } from "@/components/public/knowledge-card";
 import { contentRepository } from "@/core/content/repository";
@@ -17,14 +19,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TagPage({ params }: Props) {
   const slug = (await params).slug;
-  const [tag, contents] = await Promise.all([
+  const [tag, contents, relatedTags] = await Promise.all([
     contentRepository.findPublicTagBySlug(slug),
     contentRepository.listPublicByTag(slug),
+    contentRepository.findRelatedTags(slug),
   ]);
   if (!tag) notFound();
 
   return <div className="container">
     <header className="page-hero"><p className="eyebrow">Tag</p><h1>#{tag.name}</h1><p>{tag.description || `บทความและบันทึกสาธารณะที่เกี่ยวข้องกับ ${tag.name}`}</p></header>
+    {relatedTags.length > 0 && <div className="tag-related"><span className="tag-related-label">แท็กที่เกี่ยวข้อง:</span>{relatedTags.map((rt) => <Link href={`/tags/${rt.slug}` as Route} className="tag" key={rt.slug}>{rt.name} ({rt.contentCount})</Link>)}</div>}
     <div className="content-grid">{contents.map((content) => <KnowledgeCard content={content} key={content.id} />)}</div>
   </div>;
 }

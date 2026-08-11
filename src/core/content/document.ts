@@ -110,7 +110,28 @@ export function editorBlocksToReaderBlocks(value: unknown[]): ContentBlock[] {
     }
 
     flushList();
-    if (block.type === "heading") {
+
+    // Rich block round-trip: callout, toggle, quote
+    if (block.type === "calloutBlock") {
+      result.push({ id, type: "callout", tone: (block.props?.tone as "note" | "tip" | "warning") ?? "note", title: String(block.props?.title ?? ""), text });
+    } else if (block.type === "toggleBlock") {
+      result.push({ id, type: "toggle", title: String(block.props?.title ?? ""), text, open: Boolean(block.props?.open) });
+    } else if (block.type === "quoteBlock") {
+      const attribution = block.props?.attribution ? String(block.props.attribution) : undefined;
+      result.push({ id, type: "quote", text, ...(attribution ? { attribution } : {}) });
+    } else if (block.type === "imageBlock") {
+      const src = String(block.props?.src ?? "");
+      const alt = String(block.props?.alt ?? "");
+      const caption = block.props?.caption ? String(block.props.caption) : undefined;
+      const width = Number(block.props?.width) || undefined;
+      const height = Number(block.props?.height) || undefined;
+      if (src) result.push({ id, type: "image", src, alt, ...(caption ? { caption } : {}), ...(width ? { width } : {}), ...(height ? { height } : {}) });
+    } else if (block.type === "embedBlock") {
+      const url = String(block.props?.url ?? "");
+      const embedType = (block.props?.embedType as "youtube" | "vimeo" | "other") ?? "other";
+      const caption = block.props?.caption ? String(block.props.caption) : undefined;
+      if (url) result.push({ id, type: "embed", url, embedType, ...(caption ? { caption } : {}) });
+    } else if (block.type === "heading") {
       result.push({ id, type: "heading", level: block.props?.level === 3 ? 3 : 2, text });
     } else if (block.type === "codeBlock") {
       result.push({ id, type: "code", language: String(block.props?.language ?? "text"), code: text });
@@ -154,7 +175,18 @@ export function readerBlocksToEditorBlocks(blocks: ContentBlock[]): unknown[] {
     if (block.type === "code") return [{ id: block.id, type: "codeBlock", props: { language: block.language }, content: [{ type: "text", text: block.code, styles: {} }], children: [] }];
     if (block.type === "list") return block.items.map((item, index) => ({ id: `${block.id}-${index}`, type: "bulletListItem", content: [{ type: "text", text: item, styles: {} }], children: [] }));
     if (block.type === "executable-code" || block.type === "formula-example" || block.type === "automation-script") return [learningBlockToEditorBlock(block)];
-    const text = block.type === "callout" || block.type === "toggle" ? `${block.title}: ${block.text}` : block.text;
-    return [{ id: block.id, type: "paragraph", content: [{ type: "text", text, styles: {} }], children: [] }];
+    // Rich block round-trip: preserve callout, toggle, quote, image, embed
+    if (block.type === "callout") return [{ id: block.id, type: "calloutBlock", props: { tone: block.tone, title: block.title }, content: [{ type: "text", text: block.text, styles: {} }], children: [] }];
+    if (block.type === "toggle") return [{ id: block.id, type: "toggleBlock", props: { title: block.title, open: block.open ?? false }, content: [{ type: "text", text: block.text, styles: {} }], children: [] }];
+    if (block.type === "quote") return [{ id: block.id, type: "quoteBlock", props: { attribution: block.attribution ?? "" }, content: [{ type: "text", text: block.text, styles: {} }], children: [] }];
+    if (block.type === "image") return [{ id: block.id, type: "imageBlock", props: { src: block.src, alt: block.alt, caption: block.caption ?? "", width: block.width ?? 0, height: block.height ?? 0 }, children: [] }];
+    if (block.type === "embed") return [{ id: block.id, type: "embedBlock", props: { url: block.url, embedType: block.embedType, caption: block.caption ?? "" }, children: [] }];
+    // Fallback for unknown block types: extract text-like content
+    const fallbackText = "text" in block && typeof block.text === "string" ? block.text
+      : "items" in block && Array.isArray(block.items) ? block.items.map((item: unknown) => typeof item === "string" ? item : (item as { step?: string })?.step ?? "").join(" ")
+      : "code" in block && typeof block.code === "string" ? block.code
+      : "expression" in block && typeof block.expression === "string" ? block.expression
+      : "";
+    return [{ id: block.id, type: "paragraph", content: [{ type: "text", text: fallbackText, styles: {} }], children: [] }];
   });
 }
