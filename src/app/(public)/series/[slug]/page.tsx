@@ -2,6 +2,7 @@ import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Clock } from "lucide-react";
 import { notFound } from "next/navigation";
+import { SeriesProgress } from "@/components/public/series-progress";
 import { contentRepository } from "@/core/content/repository";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -21,7 +22,7 @@ export default async function SeriesDetailPage({ params }: Props) {
   const series = await contentRepository.findOpenSeriesBySlug((await params).slug);
   if (!series) notFound();
   return <div className="container series-page">
-    <header className="page-hero"><p className="eyebrow">Learning Series · {series.contentCount} บท</p><h1>{series.name}</h1><p>{series.description || "อ่านบทความตามลำดับเพื่อเชื่อมความรู้ตั้งแต่พื้นฐานจนจบ Series"}</p></header>
+    <header className="page-hero"><p className="eyebrow">Learning Series · {series.contentCount} บท</p><h1>{series.name}</h1><p>{series.description || "อ่านบทความตามลำดับเพื่อเชื่อมความรู้ตั้งแต่พื้นฐานจนจบ Series"}</p><SeriesProgress seriesSlug={series.slug} totalItems={series.items.length} itemSlugs={series.items.map((item) => item.slug)} /></header>
     <ol className="series-lesson-list">{series.items.map((content, index) => <li key={content.id}>
       <Link href={`/knowledge/${content.slug}` as Route}>
         <span className="series-lesson-number">{String(index + 1).padStart(2, "0")}</span>

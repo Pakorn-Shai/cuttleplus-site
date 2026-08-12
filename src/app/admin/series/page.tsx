@@ -23,6 +23,7 @@ export default async function SeriesAdminPage({ searchParams }: { searchParams: 
       <label>Slug<input name="slug" placeholder="เว้นว่างเพื่อสร้างอัตโนมัติ" maxLength={140} /></label>
       <label>การมองเห็น<select name="visibility" defaultValue="PRIVATE"><option value="PRIVATE">Private</option><option value="UNLISTED">Unlisted</option><option value="PUBLIC">Public</option></select></label>
       <label className="wide">คำอธิบาย<textarea name="description" maxLength={600} /></label>
+      <label className="wide">Cover URL<input name="coverUrl" placeholder="https://..." maxLength={2000} /></label>
       <button className="primary-button">สร้าง Series</button>
     </form></section>
     <section className="taxonomy-list">{seriesList.map((series) => {
@@ -40,6 +41,7 @@ export default async function SeriesAdminPage({ searchParams }: { searchParams: 
           <label>Slug<input name="slug" defaultValue={series.slug} required /></label>
           <label>การมองเห็น<select name="visibility" defaultValue={series.visibility}><option value="PRIVATE">Private</option><option value="UNLISTED">Unlisted</option><option value="PUBLIC">Public</option></select></label>
           <label className="wide">คำอธิบาย<textarea name="description" defaultValue={series.description ?? ""} /></label>
+          <label className="wide">Cover URL<input name="coverUrl" defaultValue={series.coverUrl ?? ""} placeholder="https://..." maxLength={2000} /></label>
           <fieldset className="collection-picker series-picker wide"><legend>บทและลำดับการอ่าน</legend>{orderedContents.map((content, index) => <label key={content.id}>
             <input type="checkbox" name="contentIds" value={content.id} defaultChecked={selectedIds.has(content.id)} />
             <span>{content.title}<small>{content.status.toLowerCase()}</small></span>

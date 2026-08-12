@@ -64,7 +64,10 @@ export default async function ArticlePage({ params }: Props) {
     if ("content" in block && typeof block.content === "string") return acc + block.content.split(/\s+/).length;
     return acc;
   }, 0);
-  const structuredData = [
+  // Check for FAQ blocks to add FAQPage structured data
+  const faqBlocks = content.blocks.filter((block) => block.type === "faq" && "items" in block && Array.isArray(block.items));
+  const hasFaq = faqBlocks.length > 0;
+  const structuredData: Record<string, unknown>[] = [
     { "@context": "https://schema.org", "@type": content.type === "Tutorial" ? "TechArticle" : "Article", headline: content.title, description: content.excerpt, url: articleUrl, datePublished: content.publishedAt, dateModified: content.updatedAt, wordCount, keywords: content.tags.length ? content.tags.join(", ") : undefined, author: { "@type": "Person", name: settings.siteName, url: siteUrl || undefined }, publisher: { "@type": "Organization", name: settings.siteName, url: siteUrl || undefined }, mainEntityOfPage: { "@type": "WebPage", "@id": articleUrl } },
     { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
       { "@type": "ListItem", position: 1, name: "หน้าแรก", item: `${siteUrl}/` },
@@ -73,6 +76,20 @@ export default async function ArticlePage({ params }: Props) {
       { "@type": "ListItem", position: 4, name: content.title },
     ] },
   ];
+  if (hasFaq) {
+    structuredData.push({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqBlocks.flatMap((block) => {
+        const items = (block as { items: { question: string; answer: string }[] }).items;
+        return items.map((item) => ({
+          "@type": "Question",
+          name: item.question,
+          acceptedAnswer: { "@type": "Answer", text: item.answer },
+        }));
+      }),
+    });
+  }
   return <article className="article-shell">
     <aside className="article-toc"><h2>สารบัญ</h2>{content.headings.map((heading) => <a className={`toc-level-${heading.level}`} href={`#${heading.id}`} key={heading.id}>{heading.text}</a>)}</aside>
     <div className="article-main">

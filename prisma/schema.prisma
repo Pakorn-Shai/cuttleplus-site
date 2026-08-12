@@ -368,3 +368,23 @@ model RateLimitBucket {
 
   @@index([expiresAt])
 }
+
+model PageView {
+  id        String   @id @default(cuid())
+  path      String
+  referrer  String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([date])
+  @@index([path])
+}
+
+model ContentEmbedding {
+  id        String   @id @default(cuid())
+  contentId String   @unique
+  embedding Json
+  model     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

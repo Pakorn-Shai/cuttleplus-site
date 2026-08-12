@@ -49,8 +49,7 @@ const defaultNavigationItems: NavigationItem[] = [
   { id: "nav-categories", label: "หมวดหมู่", url: "/categories", type: "page", position: 2, visible: true },
   { id: "nav-tags", label: "แท็ก", url: "/tags", type: "page", position: 3, visible: true },
   { id: "nav-series", label: "Series", url: "/series", type: "page", position: 4, visible: true },
-  { id: "nav-search", label: "ค้นหา", url: "/search", type: "page", position: 5, visible: true },
-  { id: "nav-about", label: "เกี่ยวกับฉัน", url: "/about", type: "page", position: 6, visible: true },
+  { id: "nav-about", label: "เกี่ยวกับฉัน", url: "/about", type: "page", position: 5, visible: true },
 ];
 
 export const defaultSiteSettings: SiteSettings = {

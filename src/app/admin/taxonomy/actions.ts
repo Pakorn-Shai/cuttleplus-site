@@ -23,7 +23,7 @@ const categorySchema = baseSchema.extend({
 });
 const tagSchema = baseSchema;
 const collectionSchema = baseSchema.extend({ visibility: z.enum(["PRIVATE", "UNLISTED", "PUBLIC"]) });
-const seriesSchema = baseSchema.extend({ visibility: z.enum(["PRIVATE", "UNLISTED", "PUBLIC"]) });
+const seriesSchema = baseSchema.extend({ visibility: z.enum(["PRIVATE", "UNLISTED", "PUBLIC"]), coverUrl: z.string().trim().max(2000).optional() });
 
 function value(formData: FormData, key: string) {
   return String(formData.get(key) ?? "");
@@ -201,6 +201,7 @@ export async function saveSeriesAction(formData: FormData) {
     slug: value(formData, "slug"),
     description: value(formData, "description"),
     visibility: value(formData, "visibility"),
+    coverUrl: value(formData, "coverUrl"),
   });
   if (!parsed.success) pathWithError("/admin/series", "invalid");
   const slug = createSlug(parsed.data.slug || parsed.data.name);
@@ -227,8 +228,8 @@ export async function saveSeriesAction(formData: FormData) {
     await prisma.$transaction(async (tx) => {
       const series = await tx.series.upsert({
         where: { id: parsed.data.id ?? "__new__" },
-        update: { name: parsed.data.name, slug, description: parsed.data.description || null, visibility: parsed.data.visibility },
-        create: { name: parsed.data.name, slug, description: parsed.data.description || null, visibility: parsed.data.visibility },
+        update: { name: parsed.data.name, slug, description: parsed.data.description || null, visibility: parsed.data.visibility, coverUrl: parsed.data.coverUrl || null },
+        create: { name: parsed.data.name, slug, description: parsed.data.description || null, visibility: parsed.data.visibility, coverUrl: parsed.data.coverUrl || null },
       });
       await tx.seriesItem.deleteMany({ where: { seriesId: series.id } });
       if (orderedIds.length) await tx.seriesItem.createMany({
