@@ -6,17 +6,19 @@ import { prisma } from "@/lib/prisma";
 import { getOpenRouterModel, requestAISuggestion, type AIRequestOptions } from "./openrouter";
 import { contentSnapshotHash, legacyContentSnapshotHash, matchesOriginalSuggestionSnapshot } from "./content-hash";
 import { applyReadabilitySuggestion, readabilitySuggestionSchema } from "./suggestion";
-
-const PROMPT_VERSION = "readability-v2";
+import { getTemplateVersion } from "./prompt-templates";
+import { checkBudget, trackUsage } from "./budget";
+import { estimateCost } from "./cost";
 
 export async function createReadabilitySuggestion(contentId: string, options?: AIRequestOptions) {
+  await checkBudget();
   const content = await prisma.content.findUnique({ where: { id: contentId }, include: { revisions: { orderBy: { revisionNumber: "desc" }, take: 1 } } });
   if (!content || content.deletedAt) throw new Error("CONTENT_NOT_FOUND");
   const inputHash = contentSnapshotHash(content);
   const duplicate = await prisma.aISuggestion.findFirst({ where: { contentId, status: "PENDING", job: { inputHash, jobType: "READABILITY" } }, include: { job: true } });
   if (duplicate) return duplicate;
   const model = getOpenRouterModel();
-  const job = await prisma.aIJob.create({ data: { contentId, jobType: "READABILITY", provider: "openrouter", model, promptVersion: PROMPT_VERSION, inputHash, status: "RUNNING" } });
+  const job = await prisma.aIJob.create({ data: { contentId, jobType: "READABILITY", provider: "openrouter", model, promptVersion: getTemplateVersion("readability"), inputHash, status: "RUNNING" } });
   const stored = parseStoredDocument(content.contentJson);
   try {
     const result = await requestAISuggestion({ title: content.title, excerpt: content.excerpt ?? "", blocks: stored.readerBlocks }, options);
@@ -26,7 +28,8 @@ export async function createReadabilitySuggestion(contentId: string, options?: A
         originalJson: { title: content.title, excerpt: content.excerpt ?? "", blocks: stored.readerBlocks } as unknown as Prisma.InputJsonValue,
         suggestedJson: result.suggestion as unknown as Prisma.InputJsonValue,
       } });
-      await tx.aIJob.update({ where: { id: job.id }, data: { status: "COMPLETED", model: result.model, inputTokens: result.inputTokens, outputTokens: result.outputTokens, completedAt: new Date() } });
+      const cost = estimateCost(result.inputTokens ?? 0, result.outputTokens ?? 0);
+      await tx.aIJob.update({ where: { id: job.id }, data: { status: "COMPLETED", model: result.model, inputTokens: result.inputTokens, outputTokens: result.outputTokens, estimatedCost: cost, completedAt: new Date() } });
       return suggestion;
     });
   } catch (error) {
@@ -35,7 +38,7 @@ export async function createReadabilitySuggestion(contentId: string, options?: A
   }
 }
 
-export async function reviewSuggestion(input: { suggestionId: string; decision: "accept" | "reject"; userId: string }) {
+export async function reviewSuggestion(input: { suggestionId: string; decision: "accept" | "reject"; userId: string; blockIds?: string[] }) {
   return prisma.$transaction(async (tx) => {
     const suggestion = await tx.aISuggestion.findUnique({
       where: { id: input.suggestionId },
@@ -61,13 +64,17 @@ export async function reviewSuggestion(input: { suggestionId: string; decision: 
     const proposed = readabilitySuggestionSchema.safeParse(suggestion.suggestedJson);
     if (!proposed.success) throw new Error("INVALID_SUGGESTION");
     const stored = parseStoredDocument(suggestion.content.contentJson);
-    const blocks = applyReadabilitySuggestion(stored.readerBlocks, proposed.data);
+    const isPartial = input.blockIds && input.blockIds.length > 0;
+    const blocks = applyReadabilitySuggestion(stored.readerBlocks, proposed.data, isPartial ? { blockIds: input.blockIds } : undefined);
     const artifacts = buildContentArtifacts(blocks);
     const document = createStoredDocument(artifacts.blocks, readerBlocksToEditorBlocks(artifacts.blocks.filter((block) => block.type !== "executable-code" && block.type !== "formula-example" && block.type !== "automation-script"))) as unknown as Prisma.InputJsonValue;
     const latest = await tx.contentRevision.aggregate({ where: { contentId: suggestion.contentId }, _max: { revisionNumber: true } });
     // Preserve the exact state that is about to be replaced. Creating the
     // revision first also makes an accepted suggestion reversible even when
     // this is the content's first revision.
+    const reason = isPartial
+      ? `Before accepting AI suggestion ${suggestion.id} (partial: ${input.blockIds!.length} blocks)`
+      : `Before accepting AI suggestion ${suggestion.id}`;
     const previousRevision = await tx.contentRevision.create({ data: {
       contentId: suggestion.content.id,
       revisionNumber: (latest._max.revisionNumber ?? 0) + 1,
@@ -78,7 +85,7 @@ export async function reviewSuggestion(input: { suggestionId: string; decision: 
       plainText: suggestion.content.plainText,
       createdById: input.userId,
       source: "AI",
-      reason: `Before accepting AI suggestion ${suggestion.id}`,
+      reason,
     } });
 
     // Avoid overwriting an autosave that lands after the snapshot check. A
@@ -102,7 +109,8 @@ export async function reviewSuggestion(input: { suggestionId: string; decision: 
       where: { id: suggestion.id },
       data: { status: "ACCEPTED", reviewedAt: new Date(), revisionId: previousRevision.id },
     });
-    await tx.auditLog.create({ data: { userId: input.userId, action: "AI_SUGGESTION_ACCEPTED", entityType: "AISuggestion", entityId: suggestion.id } });
+    const auditAction = isPartial ? "AI_SUGGESTION_PARTIAL_ACCEPTED" : "AI_SUGGESTION_ACCEPTED";
+    await tx.auditLog.create({ data: { userId: input.userId, action: auditAction, entityType: "AISuggestion", entityId: suggestion.id } });
     return { contentId: content.id, slug: content.slug };
   });
 }

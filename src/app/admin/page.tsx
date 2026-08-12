@@ -1,3 +1,7 @@
+import { AnalyticsDashboard } from "@/components/admin/analytics-dashboard";
+import { KnowledgeAssistant } from "@/components/admin/knowledge-assistant";
+import { LearningPathsPanel } from "@/components/admin/learning-paths-panel";
+import { SeoAuditPanel } from "@/components/admin/seo-audit-panel";
 import Link from "next/link";
 import { BookOpenCheck, FileClock, FileText, Globe2, Inbox, LockKeyhole, Sparkles } from "lucide-react";
 import { contentRepository } from "@/core/content/repository";
@@ -40,5 +44,25 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
       {missingExcerpt > 0 && <Link className="activity-item" href="/admin/content?status=published"><span className="activity-icon"><Inbox size={16} /></span><div><strong>{missingExcerpt} บทความที่เผยแพร่แล้วไม่มี excerpt</strong><span>เพิ่มคำอธิบายเพื่อ SEO และ Library</span></div><span>เปิด →</span></Link>}
       {unusedMedia > 0 && <Link className="activity-item" href="/admin/media"><span className="activity-icon"><Inbox size={16} /></span><div><strong>{unusedMedia} สื่อที่ไม่ได้ถูกใช้งาน</strong><span>รูปที่ไม่ได้เป็นภาพปกของเนื้อหาใด</span></div><span>เปิด →</span></Link>}
     </div></article></section>
+    <section className="admin-grid" style={{ marginTop: "2rem" }}>
+      <article className="admin-panel" style={{ gridColumn: "1 / -1" }}>
+        <AnalyticsDashboard />
+      </article>
+    </section>
+    <section className="admin-grid" style={{ marginTop: "2rem" }}>
+      <article className="admin-panel" style={{ gridColumn: "1 / -1" }}>
+        <SeoAuditPanel />
+      </article>
+    </section>
+    <section className="admin-grid" style={{ marginTop: "2rem" }}>
+      <article className="admin-panel" style={{ gridColumn: "1 / -1" }}>
+        <LearningPathsPanel />
+      </article>
+    </section>
+    <section className="admin-grid" style={{ marginTop: "2rem" }}>
+      <article className="admin-panel" style={{ gridColumn: "1 / -1" }}>
+        <KnowledgeAssistant />
+      </article>
+    </section>
   </main>;
 }

@@ -18,8 +18,23 @@ export default async function AboutPage() {
   ]);
   const publishedCount = contents.length;
   const totalTags = tags.length;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const profileStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    name: settings.siteName,
+    description: settings.siteDescription,
+    url: siteUrl ? `${siteUrl}/about` : undefined,
+    mainEntity: {
+      "@type": "Person",
+      name: settings.siteName,
+      description: settings.siteDescription,
+      url: siteUrl || undefined,
+    },
+  };
 
   return <div className="container about-grid">
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(profileStructuredData).replace(/</g, "\\u003c") }} />
     <aside className="about-portrait"><BookOpen size={90} /></aside>
     <section className="about-copy">
       <p className="eyebrow">About this space</p>

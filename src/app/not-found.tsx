@@ -10,7 +10,7 @@ export default function NotFound() {
       <p>ลิงก์อาจถูกย้าย หมดอายุ หรือเนื้อหานี้เป็น Private</p>
       <div className="not-found-actions">
         <Link className="primary-button" href="/knowledge"><Home size={16} /> กลับไปคลังความรู้</Link>
-        <Link className="secondary-button" href="/search">ค้นหา</Link>
+        <Link className="secondary-button" href="/knowledge">ค้นหา</Link>
       </div>
     </div>
   </main>;

@@ -5,8 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { contentSnapshotHash } from "./content-hash";
 import { requestMetadataSuggestion } from "./openrouter";
 import { parseStoredDocument } from "@/core/content/document";
+import { getTemplateVersion } from "./prompt-templates";
+import { checkBudget } from "./budget";
+import { estimateCost } from "./cost";
 
 export async function createMetadataSuggestion(contentId: string) {
+  await checkBudget();
   const content = await prisma.content.findUnique({ where: { id: contentId }, include: { category: true, tags: { include: { tag: true } } } });
   if (!content || content.deletedAt) throw new Error("CONTENT_NOT_FOUND");
 
@@ -25,7 +29,7 @@ export async function createMetadataSuggestion(contentId: string) {
   const stored = parseStoredDocument(content.contentJson);
   const model = process.env.OPTIMIZER_MODEL || process.env.OPENROUTER_MODEL || "openai/gpt-5.6-luna";
 
-  const job = await prisma.aIJob.create({ data: { contentId, jobType: "METADATA", provider: "openrouter", model, promptVersion: "metadata-v1", inputHash, status: "RUNNING" } });
+  const job = await prisma.aIJob.create({ data: { contentId, jobType: "METADATA", provider: "openrouter", model, promptVersion: getTemplateVersion("metadata"), inputHash, status: "RUNNING" } });
 
   try {
     const result = await requestMetadataSuggestion({
@@ -42,7 +46,8 @@ export async function createMetadataSuggestion(contentId: string) {
         originalJson: { title: content.title, excerpt: content.excerpt ?? "", category: content.category?.name ?? null, tags: content.tags.map(({ tag }) => tag.name) },
         suggestedJson: result.suggestion as unknown as Prisma.InputJsonValue,
       } });
-      await tx.aIJob.update({ where: { id: job.id }, data: { status: "COMPLETED", model: result.model, inputTokens: result.inputTokens, outputTokens: result.outputTokens, completedAt: new Date() } });
+      const cost = estimateCost(result.inputTokens ?? 0, result.outputTokens ?? 0);
+      await tx.aIJob.update({ where: { id: job.id }, data: { status: "COMPLETED", model: result.model, inputTokens: result.inputTokens, outputTokens: result.outputTokens, estimatedCost: cost, completedAt: new Date() } });
       return suggestion;
     });
   } catch (error) {
