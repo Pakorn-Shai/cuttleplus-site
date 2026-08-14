@@ -3,11 +3,13 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { contentSnapshotHash } from "./content-hash";
-import { requestMetadataSuggestion } from "./openrouter";
+import { metadataResponseSchema, getOpenRouterModel } from "./openrouter";
+import { getTyphoonModel } from "./typhoon";
 import { parseStoredDocument } from "@/core/content/document";
-import { getTemplateVersion } from "./prompt-templates";
+import { getTemplate, getTemplateVersion } from "./prompt-templates";
 import { checkBudget } from "./budget";
 import { estimateCost } from "./cost";
+import { withFallback, getPrimaryProviderName } from "./provider";
 
 export async function createMetadataSuggestion(contentId: string) {
   await checkBudget();
@@ -27,18 +29,27 @@ export async function createMetadataSuggestion(contentId: string) {
   const availableCategories = categories.map((c) => c.name);
 
   const stored = parseStoredDocument(content.contentJson);
-  const model = process.env.OPTIMIZER_MODEL || process.env.OPENROUTER_MODEL || "openai/gpt-5.6-luna";
+  const template = getTemplate("metadata");
+  const primaryProvider = getPrimaryProviderName();
+  const initialModel = primaryProvider === "typhoon" ? getTyphoonModel() : getOpenRouterModel();
+  const rawMaxTokens = Number(process.env.AI_MAX_TOKENS);
+  const maxTokens = Number.isFinite(rawMaxTokens) && rawMaxTokens >= 256 && rawMaxTokens <= 16384 ? Math.floor(rawMaxTokens) : 2048;
 
-  const job = await prisma.aIJob.create({ data: { contentId, jobType: "METADATA", provider: "openrouter", model, promptVersion: getTemplateVersion("metadata"), inputHash, status: "RUNNING" } });
+  const job = await prisma.aIJob.create({ data: { contentId, jobType: "METADATA", provider: primaryProvider, model: initialModel, promptVersion: getTemplateVersion("metadata"), inputHash, status: "RUNNING" } });
 
   try {
-    const result = await requestMetadataSuggestion({
-      title: content.title,
-      excerpt: content.excerpt ?? "",
-      blocks: stored.readerBlocks,
-      availableCategories,
-      existingTags: content.tags.map(({ tag }) => tag.name),
-    });
+    const { result, provider: usedProvider } = await withFallback((provider) =>
+      provider.requestMetadataSuggestion({
+        title: content.title,
+        excerpt: content.excerpt ?? "",
+        blocks: stored.readerBlocks,
+        availableCategories,
+        existingTags: content.tags.map(({ tag }) => tag.name),
+        maxTokens,
+        systemPrompt: template.systemPrompt,
+        responseSchema: metadataResponseSchema,
+      }),
+    );
 
     return await prisma.$transaction(async (tx) => {
       const suggestion = await tx.aISuggestion.create({ data: {
@@ -47,7 +58,7 @@ export async function createMetadataSuggestion(contentId: string) {
         suggestedJson: result.suggestion as unknown as Prisma.InputJsonValue,
       } });
       const cost = estimateCost(result.inputTokens ?? 0, result.outputTokens ?? 0);
-      await tx.aIJob.update({ where: { id: job.id }, data: { status: "COMPLETED", model: result.model, inputTokens: result.inputTokens, outputTokens: result.outputTokens, estimatedCost: cost, completedAt: new Date() } });
+      await tx.aIJob.update({ where: { id: job.id }, data: { status: "COMPLETED", provider: usedProvider, model: result.model, inputTokens: result.inputTokens, outputTokens: result.outputTokens, estimatedCost: cost, completedAt: new Date() } });
       return suggestion;
     });
   } catch (error) {

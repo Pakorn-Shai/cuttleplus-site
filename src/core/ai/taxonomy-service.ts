@@ -7,8 +7,9 @@ import { parseStoredDocument } from "@/core/content/document";
 import { getTemplateVersion, getTemplate } from "./prompt-templates";
 import { checkBudget } from "./budget";
 import { estimateCost } from "./cost";
-import { getProvider } from "./provider";
-import { metadataResponseSchema } from "./openrouter";
+import { withFallback, getPrimaryProviderName } from "./provider";
+import { metadataResponseSchema, getOpenRouterModel } from "./openrouter";
+import { getTyphoonModel } from "./typhoon";
 
 export async function createTaxonomySuggestion(contentId: string) {
   await checkBudget();
@@ -31,15 +32,16 @@ export async function createTaxonomySuggestion(contentId: string) {
   const availableSeries = existingSeries.map((s) => s.name);
 
   const stored = parseStoredDocument(content.contentJson);
-  const model = process.env.OPTIMIZER_MODEL || process.env.OPENROUTER_MODEL || "openai/gpt-5.6-luna";
   const template = getTemplate("taxonomy");
+  const primaryProvider = getPrimaryProviderName();
+  const initialModel = primaryProvider === "typhoon" ? getTyphoonModel() : getOpenRouterModel();
 
   const job = await prisma.aIJob.create({
     data: {
       contentId,
       jobType: "TAXONOMY",
-      provider: "openrouter",
-      model,
+      provider: primaryProvider,
+      model: initialModel,
       promptVersion: getTemplateVersion("taxonomy"),
       inputHash,
       status: "RUNNING",
@@ -47,7 +49,6 @@ export async function createTaxonomySuggestion(contentId: string) {
   });
 
   try {
-    const provider = getProvider();
     const maxTokens = 2048;
     const systemPrompt = template.systemPrompt;
     const userContent = JSON.stringify({
@@ -59,17 +60,20 @@ export async function createTaxonomySuggestion(contentId: string) {
       availableSeries,
     });
 
-    // Use the metadata suggestion schema since it already has the right shape
-    const result = await provider.requestMetadataSuggestion({
-      title: content.title,
-      excerpt: content.excerpt ?? "",
-      blocks: stored.readerBlocks,
-      availableCategories,
-      existingTags,
-      maxTokens,
-      systemPrompt,
-      responseSchema: metadataResponseSchema,
-    });
+    // Use the metadata suggestion schema since it already has the right shape.
+    // Runs through the provider chain (Typhoon primary → OpenRouter fallback).
+    const { result, provider: usedProvider } = await withFallback((provider) =>
+      provider.requestMetadataSuggestion({
+        title: content.title,
+        excerpt: content.excerpt ?? "",
+        blocks: stored.readerBlocks,
+        availableCategories,
+        existingTags,
+        maxTokens,
+        systemPrompt,
+        responseSchema: metadataResponseSchema,
+      }),
+    );
 
     return await prisma.$transaction(async (tx) => {
       const suggestion = await tx.aISuggestion.create({
@@ -91,6 +95,7 @@ export async function createTaxonomySuggestion(contentId: string) {
         where: { id: job.id },
         data: {
           status: "COMPLETED",
+          provider: usedProvider,
           model: result.model,
           inputTokens: result.inputTokens,
           outputTokens: result.outputTokens,
