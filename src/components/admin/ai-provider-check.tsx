@@ -9,14 +9,15 @@ export function AIProviderCheck() {
 
   async function check() {
     setState("loading");
-    setMessage("กำลังตรวจ OpenRouter...");
+    setMessage("กำลังตรวจ AI provider หลัก...");
     try {
       const response = await fetch("/api/admin/ai/health", { method: "POST" });
-      const result = await response.json() as { error?: string; model?: string };
+      const result = await response.json() as { error?: string; model?: string; provider?: string };
       if (response.status === 401) { window.location.href = "/login"; return; }
       if (!response.ok) { setState("error"); setMessage(result.error ?? "ตรวจการเชื่อมต่อไม่สำเร็จ"); return; }
       setState("success");
-      setMessage(`เชื่อมต่อสำเร็จ · ${result.model}`);
+      const providerLabel = result.provider === "typhoon" ? "Typhoon" : result.provider === "openrouter" ? "OpenRouter" : result.provider ?? "AI";
+      setMessage(`เชื่อมต่อสำเร็จ (${providerLabel}) · ${result.model}`);
     } catch {
       setState("error");
       setMessage("เรียก API ตรวจสอบไม่สำเร็จ");

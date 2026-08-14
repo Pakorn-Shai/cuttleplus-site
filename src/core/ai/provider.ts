@@ -72,6 +72,11 @@ export function getProvider(name?: string): AIProvider {
   return factory();
 }
 
+/** Name of the configured primary provider (used for job bookkeeping). */
+export function getPrimaryProviderName(): string {
+  return process.env.AI_PROVIDER ?? "openrouter";
+}
+
 // ── Fallback chain ──────────────────────────────────────────────────
 
 export function getProviderChain(): AIProvider[] {
