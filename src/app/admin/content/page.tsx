@@ -2,6 +2,7 @@ import type { Route } from "next";
 import Link from "next/link";
 import { Archive, CalendarClock, Copy, Globe2, LayoutGrid, LayoutList, Pencil, Search, Trash2, X } from "lucide-react";
 import { contentRepository } from "@/core/content/repository";
+import { ConfirmButton } from "@/components/admin/confirm-button";
 import { bulkUpdateContentAction, clearContentScheduleAction, deleteContentAction, duplicateContentAction, setContentScheduleAction, updateContentStatusAction } from "./actions";
 
 const resultMessages: Record<string, { tone: "success" | "error"; text: string }> = {
@@ -82,14 +83,14 @@ export default async function AdminContentPage({ searchParams }: { searchParams:
       </article>;
     })}{!filtered.length && <div className="empty-state" style={{ gridColumn: "1 / -1" }}><Search size={28} /><h3>ไม่พบเนื้อหาที่ตรงกับตัวกรอง</h3><p>ลองเปลี่ยนคำค้น สถานะ หรือ Visibility</p></div>}</div>
 
-    : <form action={bulkUpdateContentAction}>
+    : <>
     <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th style={{ width: 32 }}><span className="sr-only">เลือก</span></th><th>ชื่อ</th><th>ประเภท</th><th>สถานะ</th><th>Visibility</th><th>หมวดหมู่</th><th>อัปเดต</th><th>จัดการ</th></tr></thead><tbody>{filtered.map((content) => {
       const isScheduled = content.status === "scheduled";
       const canSchedule = content.status === "draft" || content.status === "inbox";
       const lifecycleAction = content.status === "archived" ? "restore" : content.status === "published" ? "draft" : "publish";
       const lifecycleLabel = content.status === "archived" ? "กู้เป็น Draft" : content.status === "published" ? "กลับเป็น Draft" : "เผยแพร่";
       return <tr key={content.id}>
-      <td><input type="checkbox" name="ids" value={content.id} aria-label={`เลือก ${content.title}`} style={{ width: 16, minHeight: 16 }} /></td>
+      <td><input type="checkbox" name="ids" value={content.id} form="bulk-form" aria-label={`เลือก ${content.title}`} style={{ width: 16, minHeight: 16 }} /></td>
       <td className="admin-table-title"><Link href={`/admin/content/${content.id}/edit` as Route}><strong>{content.title}</strong><span>/{content.slug}</span></Link></td>
       <td>{content.type}</td><td><span className={`status-badge ${content.status}`}>{content.status}</span>{isScheduled && content.scheduledAt && <span className="schedule-when"><CalendarClock size={12} /> {formatScheduled(content.scheduledAt)}</span>}</td><td><span className={`status-badge ${content.visibility}`}>{content.visibility}</span></td><td>{content.category.name}</td><td>{content.updatedAt}</td>
       <td><div className="table-actions">
@@ -98,16 +99,16 @@ export default async function AdminContentPage({ searchParams }: { searchParams:
         {canSchedule && <form className="schedule-form" action={setContentScheduleAction}><input type="hidden" name="contentId" value={content.id} /><input type="datetime-local" name="scheduledAt" required aria-label="เวลาที่ต้องการเผยแพร่" /><button className="status-action-button" type="submit"><CalendarClock size={14} /> ตั้งเวลา</button></form>}
         {content.status !== "archived" && <form action={updateContentStatusAction}><input type="hidden" name="contentId" value={content.id} /><input type="hidden" name="action" value="archive" /><button className="icon-button" type="submit" aria-label="เก็บถาวร" title="เก็บถาวร"><Archive size={14} /></button></form>}
         <form action={duplicateContentAction}><input type="hidden" name="contentId" value={content.id} /><button className="icon-button" type="submit" aria-label="ทำสำเนา" title="ทำสำเนา"><Copy size={14} /></button></form>
-        <form action={deleteContentAction}><input type="hidden" name="contentId" value={content.id} /><button className="icon-button" type="submit" aria-label="ลบ" title="ลบ" onClick={(e) => { if (!confirm(`ลบ "${content.title}"? ข้อมูลจะถูก soft-delete และสามารถกู้คืนได้`)) e.preventDefault(); }}><Trash2 size={14} /></button></form>
+        <form action={deleteContentAction}><input type="hidden" name="contentId" value={content.id} /><ConfirmButton className="icon-button" type="submit" aria-label="ลบ" title="ลบ" message={`ลบ "${content.title}"? ข้อมูลจะถูก soft-delete และสามารถกู้คืนได้`}><Trash2 size={14} /></ConfirmButton></form>
       </div></td>
     </tr>; })}</tbody></table>{!filtered.length && <div className="empty-state admin-table-empty"><Search size={28} /><h3>ไม่พบเนื้อหาที่ตรงกับตัวกรอง</h3><p>ลองเปลี่ยนคำค้น สถานะ หรือ Visibility</p></div>}</div>
-    {filtered.length > 0 && <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, padding: "10px 14px", border: "1px solid #e4e5e9", borderRadius: 10, background: "white" }}>
+    {filtered.length > 0 && <form id="bulk-form" action={bulkUpdateContentAction} style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, padding: "10px 14px", border: "1px solid #e4e5e9", borderRadius: 10, background: "white" }}>
       <span style={{ fontSize: ".72rem", color: "#747580" }}>Bulk actions:</span>
       <button type="submit" name="bulkAction" value="publish" className="status-action-button"><Globe2 size={13} /> เผยแพร่ที่เลือก</button>
       <button type="submit" name="bulkAction" value="archive" className="status-action-button"><Archive size={13} /> เก็บถาวรที่เลือก</button>
-      <button type="submit" name="bulkAction" value="delete" className="danger-button" onClick={(e) => { if (!confirm("ลบรายการที่เลือก?")) e.preventDefault(); }}><Trash2 size={13} /> ลบที่เลือก</button>
-    </div>}
+      <ConfirmButton type="submit" name="bulkAction" value="delete" className="danger-button" message="ลบรายการที่เลือก?"><Trash2 size={13} /> ลบที่เลือก</ConfirmButton>
     </form>}
+    </>}
 
   </main>;
 }
