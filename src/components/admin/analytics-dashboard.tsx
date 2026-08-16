@@ -57,6 +57,7 @@ export function AnalyticsDashboard() {
   if (!data) return null;
 
   const maxDailyViews = Math.max(1, ...data.viewsByDay.map((d) => d.views));
+  const labelStep = Math.max(1, Math.ceil(data.viewsByDay.length / 10));
 
   return (
     <div className="analytics-dashboard">
@@ -89,14 +90,16 @@ export function AnalyticsDashboard() {
         <div className="analytics-section">
           <h3>Views รายวัน</h3>
           <div className="analytics-bar-chart">
-            {data.viewsByDay.map((day) => (
+            {data.viewsByDay.map((day, index) => (
               <div key={day.date} className="analytics-bar-item" title={`${day.date}: ${day.views} views`}>
                 <div
                   className="analytics-bar"
                   style={{ height: `${(day.views / maxDailyViews) * 100}%` }}
                 />
                 <span className="analytics-bar-label">
-                  {new Date(day.date).toLocaleDateString("th-TH", { day: "numeric", month: "short" })}
+                  {index % labelStep === 0
+                    ? new Date(day.date).toLocaleDateString("th-TH", { day: "numeric", month: "short" })
+                    : ""}
                 </span>
               </div>
             ))}
