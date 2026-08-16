@@ -1,10 +1,13 @@
 "use client";
 
 import { Grid2X2, List } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 
 type ViewMode = "card" | "list";
+
+const VIEW_MODES = ["card", "list"] as const;
+const VIEW_SYNC_EVENT = "kh-view-sync";
 
 function readStored<T extends string>(key: string, valid: readonly T[], fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -14,6 +17,15 @@ function readStored<T extends string>(key: string, valid: readonly T[], fallback
   } catch {
     return fallback;
   }
+}
+
+function subscribeViewStorage(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener(VIEW_SYNC_EVENT, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(VIEW_SYNC_EVENT, callback);
+  };
 }
 
 export interface CardListViewItem {
@@ -27,41 +39,17 @@ export interface CardListViewItem {
 }
 
 export function CardListView({ items, storageKey = "kh-listing-view" }: { items: CardListViewItem[]; storageKey?: string }) {
-  const [view, setView] = useState<ViewMode>("card");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setView(readStored(storageKey, ["card", "list"] as const, "card"));
-    setMounted(true);
-  }, [storageKey]);
+  const getSnapshot = useCallback(() => readStored(storageKey, VIEW_MODES, "card"), [storageKey]);
+  const getServerSnapshot = useCallback(() => "card" as const, []);
+  const view = useSyncExternalStore(subscribeViewStorage, getSnapshot, getServerSnapshot);
 
   function updateView(next: ViewMode) {
-    setView(next);
-    window.localStorage.setItem(storageKey, next);
-  }
-
-  if (!mounted) {
-    return (
-      <>
-        <div className="library-toolbar">
-          <div className="container toolbar-inner">
-            <div className="view-toggle" aria-label="รูปแบบการแสดงผล">
-              <button className="active" aria-label="มุมมองการ์ด"><Grid2X2 size={16} /></button>
-              <button aria-label="มุมมองรายการ"><List size={17} /></button>
-            </div>
-          </div>
-        </div>
-        <div className="category-grid">
-          {items.map((item) => (
-            <a href={item.href} className={item.className ?? "category-card"} style={item.style} key={item.key}>
-              <span className="category-icon">{item.icon}</span>
-              <h3>{item.title}</h3>
-              <p>{item.subtitle}</p>
-            </a>
-          ))}
-        </div>
-      </>
-    );
+    try {
+      window.localStorage.setItem(storageKey, next);
+    } catch {
+      // ignore storage failures (private mode, quota)
+    }
+    window.dispatchEvent(new Event(VIEW_SYNC_EVENT));
   }
 
   return (

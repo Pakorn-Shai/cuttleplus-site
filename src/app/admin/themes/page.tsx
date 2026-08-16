@@ -21,11 +21,9 @@ export default async function ThemesPage({ searchParams }: { searchParams: Promi
     {query.result === "invalid" && <p className="admin-notice error" role="alert">ไม่พบ Theme ที่เลือก</p>}
     <div className="theme-admin-grid">{themes.map((theme) => {
       const active = theme.manifest.id === activeThemeId;
+      const AdminPreview = theme.components.AdminPreview;
       return <article className="theme-admin-card" key={theme.manifest.id}>
-        <div className={`theme-preview ${theme.manifest.id === "minimal" ? "minimal" : ""}`}>
-          <div className="theme-preview-bar" />
-          <div className="theme-preview-copy" />
-        </div>
+        {AdminPreview ? <AdminPreview /> : <div className="theme-preview"><div className="theme-preview-bar" /><div className="theme-preview-copy" /></div>}
         <div className="theme-card-meta">
           <div>
             <h3>{theme.manifest.name} <small>v{theme.manifest.version}</small></h3>
@@ -48,7 +46,12 @@ export default async function ThemesPage({ searchParams }: { searchParams: Promi
           {theme.manifest.supportedFeatures.length < 5 && <p style={{ marginTop: 6, fontSize: ".66rem", color: "#a33434" }}>Feature ที่ขาดจะใช้ fallback component จาก Core</p>}
         </div>
         <div style={{ padding: "0 16px 16px" }}>
-          <a href="/" target="_blank" className="secondary-button" style={{ fontSize: ".72rem", gap: 5 }}><Eye size={12} /> ดูตัวอย่าง <ExternalLink size={10} /></a>
+          <a href={`/api/theme-preview?theme=${encodeURIComponent(theme.manifest.id)}`} target="_blank" rel="noopener" className="secondary-button" style={{ fontSize: ".72rem", gap: 5 }}>
+            <Eye size={12} /> ดูตัวอย่างจริง <ExternalLink size={10} />
+          </a>
+          <p style={{ margin: "8px 0 0", fontSize: ".66rem", color: "#92939d" }}>
+            เปิดเว็บไซต์ทั้งหน้าในธีมนี้เฉพาะเบราว์เซอร์ของคุณ (ไม่กระทบผู้เยี่ยมชม) ออกได้ทุกเมื่อผ่านแถบด้านบน
+          </p>
         </div>
       </article>;
     })}</div>
