@@ -450,6 +450,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 @media (max-width: 720px) { .backup-validator { grid-template-columns: 1fr; }.backup-validator p { grid-column: auto; }.backup-restore-picker { grid-template-columns: 1fr; }.backup-restore-plan-head { flex-direction: column; align-items: start; } }
 @media (max-width: 720px) { .admin-mobile-trigger { display: inline-flex; }.admin-mobile-backdrop { position: fixed; z-index: 79; inset: 0; display: block; width: 100%; height: 100%; border: 0; background: #15152166; backdrop-filter: blur(2px); }.admin-mobile-drawer { position: fixed; z-index: 80; inset: 0 auto 0 0; width: min(86vw, 320px); display: flex; flex-direction: column; gap: 18px; padding: 18px; background: white; box-shadow: 20px 0 50px #1113; transform: translateX(-105%); transition: transform .2s ease; }.admin-mobile-drawer.open { transform: translateX(0); }.admin-mobile-drawer > header { display: flex; align-items: center; justify-content: space-between; }.admin-mobile-drawer nav { display: grid; gap: 4px; overflow-y: auto; }.admin-mobile-drawer nav a { display: flex; align-items: center; gap: 11px; padding: 11px 12px; border-radius: 9px; color: #686976; font-size: .84rem; font-weight: 650; }.admin-mobile-drawer nav a.active, .admin-mobile-drawer nav a:hover { color: var(--accent); background: var(--accent-soft); }.admin-mobile-drawer > .secondary-button { margin-top: auto; } }
 
+/* Admin: Markdown import form */
+.import-markdown-form { max-width: 860px; display: grid; gap: 16px; }
+.import-field { display: grid; gap: 6px; color: #747580; font-size: .72rem; font-weight: 700; }
+.import-field textarea, .import-field select { width: 100%; padding: 10px 12px; border: 1px solid #dedfe4; border-radius: 9px; color: #262733; background: white; font: inherit; font-size: .8rem; }
+.import-field textarea { resize: vertical; font: .8rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; tab-size: 2; }
+.import-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.import-hint { margin: 0; color: #92939d; font-size: .68rem; font-weight: 500; }
+.import-actions { display: flex; justify-content: flex-end; }
+@media (max-width: 720px) { .import-grid { grid-template-columns: 1fr; } }
+
 /* Editorial theme responsive */
 @media (max-width: 900px) { .ed-hero-columns { grid-template-columns: 1fr; gap: 30px; } }
 @media (max-width: 720px) {

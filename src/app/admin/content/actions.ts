@@ -2,14 +2,59 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import type { Route } from "next";
 import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireOwner } from "@/lib/auth";
+import { importMarkdown } from "@/core/content/import";
 
 const actionSchema = z.object({ contentId: z.string().cuid(), action: z.enum(["publish", "draft", "archive", "restore"]), returnTo: z.enum(["content", "inbox"]).default("content") });
 
 const scheduleSchema = z.object({ contentId: z.string().cuid(), scheduledAt: z.string().min(1), returnTo: z.enum(["content", "inbox"]).default("content") });
+
+const importMarkdownSchema = z.object({
+  markdown: z.string().min(1, "Markdown content is required"),
+  categorySlug: z.string().optional(),
+  status: z.enum(["DRAFT", "INBOX"]).default("DRAFT"),
+  visibility: z.enum(["PRIVATE", "UNLISTED", "PUBLIC"]).default("PRIVATE"),
+});
+
+export async function importMarkdownAction(formData: FormData) {
+  const owner = await requireOwner();
+  const parsed = importMarkdownSchema.safeParse({
+    markdown: formData.get("markdown"),
+    categorySlug: formData.get("categorySlug") || undefined,
+    status: formData.get("status") || "DRAFT",
+    visibility: formData.get("visibility") || "PRIVATE",
+  });
+  if (!parsed.success) redirect("/admin/content/import?result=invalid" as Route);
+
+  const category = parsed.data.categorySlug
+    ? await prisma.category.findUnique({ where: { slug: parsed.data.categorySlug } })
+    : null;
+
+  const result = await importMarkdown(parsed.data.markdown, {
+    categoryId: category?.id ?? undefined,
+    status: parsed.data.status,
+    visibility: parsed.data.visibility,
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      userId: owner.id,
+      action: "CONTENT_IMPORTED",
+      entityType: "Content",
+      entityId: result.contentId,
+      metadataJson: { source: "markdown", blockCount: result.blockCount },
+    },
+  });
+
+  revalidatePath("/admin/content");
+  revalidatePath("/knowledge");
+  revalidatePath("/");
+  redirect(`/admin/content/${result.contentId}/edit`);
+}
 
 export async function updateContentStatusAction(formData: FormData) {
   const owner = await requireOwner();
