@@ -14,6 +14,15 @@ function MinimalShell({ children }: ThemeShellProps) {
   return <div className="public-theme theme-minimal" style={style}>{children}</div>;
 }
 
+function MinimalAdminPreview() {
+  return (
+    <div className="theme-preview minimal" aria-hidden="true">
+      <div className="theme-preview-bar" />
+      <div className="theme-preview-copy" />
+    </div>
+  );
+}
+
 export const minimalTheme: PublicTheme = {
   manifest: {
     id: "minimal",
@@ -26,5 +35,5 @@ export const minimalTheme: PublicTheme = {
     settingsSchemaVersion: 1,
   },
   tokens: { accent: "#0b766e", accentSoft: "#dff7f2", displayFont: "Georgia, serif", bodyFont: "Georgia, serif", contentWidth: "700px", radius: "4px" },
-  components: { Shell: MinimalShell },
+  components: { Shell: MinimalShell, AdminPreview: MinimalAdminPreview },
 };

@@ -14,6 +14,15 @@ function DefaultShell({ children }: ThemeShellProps) {
   return <div className="public-theme theme-default" style={style}>{children}</div>;
 }
 
+function DefaultAdminPreview() {
+  return (
+    <div className="theme-preview clarity" aria-hidden="true">
+      <div className="theme-preview-bar" />
+      <div className="theme-preview-copy" />
+    </div>
+  );
+}
+
 export const defaultTheme: PublicTheme = {
   manifest: {
     id: "default",
@@ -26,5 +35,5 @@ export const defaultTheme: PublicTheme = {
     settingsSchemaVersion: 1,
   },
   tokens: { accent: "#6d5dfc", accentSoft: "#eeeaff", displayFont: "sans-serif", bodyFont: "sans-serif", contentWidth: "760px", radius: "20px" },
-  components: { Shell: DefaultShell },
+  components: { Shell: DefaultShell, AdminPreview: DefaultAdminPreview },
 };
