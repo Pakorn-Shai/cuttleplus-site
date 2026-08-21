@@ -141,6 +141,22 @@ const blockRegistry: Record<ContentBlock["type"], RuntimeBlockDefinition> = {
     safeHtml: (block) => `<section class="aeo-limitations">${block.title ? `<h2>${escapeText(block.title)}</h2>` : "<h2>Limitations</h2>"}<ul>${block.items.map((item) => `<li>${escapeText(item)}</li>`).join("")}</ul></section>`,
     markdown: (block) => `## ${block.title || "Limitations"}\n\n${block.items.map((item) => `- ⚠️ ${item}`).join("\n")}`,
   }),
+  // Table block
+  table: defineBlock<Extract<ContentBlock, { type: "table" }>>({
+    plainText: (block) => [block.headers.join("\t"), ...block.rows.map((row) => row.join("\t"))].join("\n"),
+    safeHtml: (block) => {
+      const head = `<thead><tr>${block.headers.map((header) => `<th>${escapeText(header)}</th>`).join("")}</tr></thead>`;
+      const body = `<tbody>${block.rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeText(cell)}</td>`).join("")}</tr>`).join("")}</tbody>`;
+      return `<div class="article-table-wrap"><table class="article-table">${head}${body}</table></div>`;
+    },
+    markdown: (block) => {
+      const escapeCell = (value: string) => value.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+      const head = `| ${block.headers.map(escapeCell).join(" | ")} |`;
+      const divider = `| ${block.headers.map(() => "---").join(" | ")} |`;
+      const rows = block.rows.map((row) => `| ${row.map(escapeCell).join(" | ")} |`).join("\n");
+      return [head, divider, rows].join("\n");
+    },
+  }),
   // Bookmark and attachment blocks
   bookmark: defineBlock<Extract<ContentBlock, { type: "bookmark" }>>({
     plainText: (block) => `[Bookmark: ${block.title}](${block.url})`,

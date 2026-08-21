@@ -7,23 +7,23 @@ const EMBEDDING_MODEL = "text-embedding-3-small";
 const EMBEDDING_DIMENSIONS = 1536;
 
 /**
- * Generate an embedding vector for text using OpenRouter's embedding-compatible endpoint.
+ * Generate an embedding vector for text using Typhoon's embedding-compatible endpoint.
  * Falls back to a simple TF-based approach if the API is not available.
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.TYPHOON_API_KEY;
   if (!apiKey) return simpleEmbedding(text);
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/embeddings", {
+    const baseUrl = (process.env.TYPHOON_BASE_URL || "https://api.opentyphoon.ai/v1").replace(/\/$/, "");
+    const response = await fetch(`${baseUrl}/embeddings`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
       },
       body: JSON.stringify({
-        model: "openai/text-embedding-3-small",
+        model: "text-embedding-3-small",
         input: text.slice(0, 8000),
       }),
       signal: AbortSignal.timeout(30_000),

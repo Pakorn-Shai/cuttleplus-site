@@ -7,6 +7,7 @@ import { getTemplateVersion, getTemplate } from "./prompt-templates";
 import { checkBudget } from "./budget";
 import { estimateCost } from "./cost";
 import { getProvider } from "./provider";
+import { getTyphoonModel } from "./typhoon";
 import { metadataResponseSchema } from "./openrouter";
 
 export interface LearningPathSuggestion {
@@ -87,14 +88,14 @@ export async function generateLearningSummary(months = 1): Promise<LearningSumma
   let suggestedNextTopics: string[] = [];
 
   try {
-    const provider = getProvider();
+    const provider = getProvider("typhoon");
     const template = getTemplate("taxonomy");
-    const model = process.env.OPTIMIZER_MODEL || process.env.OPENROUTER_MODEL || "openai/gpt-5.6-luna";
+    const model = getTyphoonModel();
 
     const job = await prisma.aIJob.create({
       data: {
         jobType: "LEARNING_SUMMARY",
-        provider: "openrouter",
+        provider: "typhoon",
         model,
         promptVersion: getTemplateVersion("taxonomy"),
         inputHash: `learning-summary-${since.toISOString().slice(0, 10)}`,

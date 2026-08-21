@@ -42,11 +42,11 @@ export default async function AIWorkspacePage({ searchParams }: { searchParams: 
   const model = getOpenRouterModel();
 
   return <main className="admin-content">
-    <header className="admin-page-head"><div><h2>AI Workspace</h2><p>OpenRouter สร้าง Suggested Version แยกจากต้นฉบับ และเปลี่ยนเนื้อหาได้เมื่อ Owner กด Accept เท่านั้น</p></div><span className="status-badge unlisted">{model}</span></header>
+    <header className="admin-page-head"><div><h2>AI Workspace</h2><p>Typhoon สร้าง Suggested Version แยกจากต้นฉบับ และเปลี่ยนเนื้อหาได้เมื่อ Owner กด Accept เท่านั้น</p></div><span className="status-badge unlisted">{model}</span></header>
     {query.error === "content_changed" && <div className="admin-alert">บทความถูกแก้หลังสร้าง suggestion กรุณาสร้าง suggestion ใหม่เพื่อป้องกันการเขียนทับข้อมูลล่าสุด</div>}
     {query.reviewed && <div className="admin-success">{query.reviewed === "accept" ? "ยอมรับ suggestion และสร้าง AI revision แล้ว" : "ปฏิเสธ suggestion แล้ว โดยต้นฉบับไม่ถูกเปลี่ยน"}</div>}
     {query.restored && <div className="admin-success">คืนค่า suggestion กลับเป็นต้นฉบับแล้ว</div>}
-    <section className="admin-panel ai-create-panel"><div className="panel-head"><h3>ปรับความอ่านง่าย</h3></div><div className="panel-body"><AIProviderCheck /><AIGenerateForm contents={contents} initialContentId={query.contentId} /><p className="ai-provider-note">Provider: OpenRouter · Model: {model} · ระบบไม่ส่ง temperature เพื่อรองรับ reasoning models</p></div></section>
+    <section className="admin-panel ai-create-panel"><div className="panel-head"><h3>ปรับความอ่านง่าย</h3></div><div className="panel-body"><AIProviderCheck /><AIGenerateForm contents={contents} initialContentId={query.contentId} /><p className="ai-provider-note">Provider: Typhoon · Model: {model} · ระบบไม่ส่ง temperature เพื่อรองรับ reasoning models</p></div></section>
     <section className="ai-review-list">
       <h3>รอตรวจสอบ ({suggestions.length})</h3>
       {suggestions.map((item) => {

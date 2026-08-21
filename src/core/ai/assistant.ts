@@ -47,8 +47,8 @@ export async function askAssistant(question: string): Promise<AssistantAnswer> {
 
   // Step 3: Ask AI to answer based on the context
   try {
-    const provider = getProvider();
-    const model = process.env.OPTIMIZER_MODEL || process.env.OPENROUTER_MODEL || "openai/gpt-5.6-luna";
+    const provider = getProvider("typhoon");
+    const model = process.env.TYPHOON_MODEL || "typhoon-v2.5-30b-a3b-instruct";
 
     const systemPrompt = [
       "You are a helpful knowledge assistant. Answer the user's question based ONLY on the provided context from their personal knowledge base.",
@@ -60,12 +60,16 @@ export async function askAssistant(question: string): Promise<AssistantAnswer> {
 
     const userMessage = `Context from knowledge base:\n\n${context}\n\nQuestion: ${question}\n\nPlease answer based on the context above. Include source citations.`;
 
-    const response = await fetch(`${process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1"}/chat/completions`, {
+    const typhoonConfig = {
+      apiKey: process.env.TYPHOON_API_KEY,
+      baseUrl: (process.env.TYPHOON_BASE_URL || "https://api.opentyphoon.ai/v1").replace(/\/$/, ""),
+    };
+
+    const response = await fetch(`${typhoonConfig.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${typhoonConfig.apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
       },
       body: JSON.stringify({
         model,

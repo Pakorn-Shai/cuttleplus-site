@@ -37,7 +37,7 @@ export function middleware(request: NextRequest) {
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
     "frame-src https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com",
-    "connect-src 'self' https://openrouter.ai https://*.r2.cloudflarestorage.com",
+    "connect-src 'self' https://api.opentyphoon.ai https://*.r2.cloudflarestorage.com",
     "media-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",

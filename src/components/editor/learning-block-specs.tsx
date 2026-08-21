@@ -140,8 +140,10 @@ const embedSpec = createReactBlockSpec(
   },
 )();
 
+const { quote: _defaultQuote, image: _defaultImage, ...baseBlockSpecs } = defaultBlockSpecs;
+
 export const knowledgeEditorBlockSpecs = {
-  ...defaultBlockSpecs,
+  ...baseBlockSpecs,
   executableCode: executableCodeSpec,
   formulaExample: formulaExampleSpec,
   automationScript: automationScriptSpec,
