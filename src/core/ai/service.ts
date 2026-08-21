@@ -3,7 +3,8 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { buildContentArtifacts, createStoredDocument, parseStoredDocument, readerBlocksToEditorBlocks } from "@/core/content/document";
 import { prisma } from "@/lib/prisma";
-import { getOpenRouterModel, requestAISuggestion, type AIRequestOptions } from "./openrouter";
+import { getTyphoonModel } from "./typhoon";
+import { requestAISuggestion, type AIRequestOptions } from "./openrouter";
 import { contentSnapshotHash, legacyContentSnapshotHash, matchesOriginalSuggestionSnapshot } from "./content-hash";
 import { applyReadabilitySuggestion, readabilitySuggestionSchema } from "./suggestion";
 import { getTemplateVersion } from "./prompt-templates";
@@ -17,8 +18,8 @@ export async function createReadabilitySuggestion(contentId: string, options?: A
   const inputHash = contentSnapshotHash(content);
   const duplicate = await prisma.aISuggestion.findFirst({ where: { contentId, status: "PENDING", job: { inputHash, jobType: "READABILITY" } }, include: { job: true } });
   if (duplicate) return duplicate;
-  const model = getOpenRouterModel();
-  const job = await prisma.aIJob.create({ data: { contentId, jobType: "READABILITY", provider: "openrouter", model, promptVersion: getTemplateVersion("readability"), inputHash, status: "RUNNING" } });
+  const model = getTyphoonModel();
+  const job = await prisma.aIJob.create({ data: { contentId, jobType: "READABILITY", provider: "typhoon", model, promptVersion: getTemplateVersion("readability"), inputHash, status: "RUNNING" } });
   const stored = parseStoredDocument(content.contentJson);
   try {
     const result = await requestAISuggestion({ title: content.title, excerpt: content.excerpt ?? "", blocks: stored.readerBlocks }, options);

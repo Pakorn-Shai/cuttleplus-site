@@ -408,6 +408,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .embed-responsive { position: relative; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #000; }
 .embed-responsive iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .article-embed figcaption { margin-top: 10px; color: var(--muted); font-size: .85em; }
+/* Article tables */
+.article-table-wrap { margin: 28px 0; overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; }
+.article-table { width: 100%; border-collapse: collapse; font-size: .88em; }
+.article-table th { padding: 12px 14px; text-align: left; background: var(--surface-2); color: var(--ink); font-weight: 750; border-bottom: 2px solid var(--line); white-space: nowrap; }
+.article-table td { padding: 10px 14px; border-bottom: 1px solid var(--line); color: var(--ink); }
+.article-table tr:last-child td { border-bottom: 0; }
+.article-table tbody tr:hover { background: var(--surface-soft); }
 /* Editor rich block styles */
 .bn-callout { margin: 12px 0; padding: 14px 16px; border-radius: 10px; }
 .bn-callout-note { background: #f3f2ff; border: 1px solid #e2dffc; }

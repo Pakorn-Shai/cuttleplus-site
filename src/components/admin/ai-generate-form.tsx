@@ -59,6 +59,6 @@ export function AIGenerateForm({ contents, initialContentId = "" }: { contents: 
     <label>แอคชั่น<select value={action} onChange={(event) => setAction(event.target.value)}>{actionOptions.map((opt) => <option value={opt.value} key={opt.value}>{opt.label}</option>)}</select></label>
     <button className="primary-button" disabled={!contentId || status === "loading"}><Sparkles size={14} /> {status === "loading" ? "AI กำลังวิเคราะห์..." : "สร้าง Suggested Version"}</button>
     {message && <p className={`ai-form-message ${status}`}>{message}</p>}
-    <small>ระบบส่งเฉพาะชื่อ Excerpt และ reader blocks ของบทความที่เลือกไปยัง OpenRouter</small>
+    <small>ระบบส่งเฉพาะชื่อ Excerpt และ reader blocks ของบทความที่เลือกไปยัง Typhoon</small>
   </form>;
 }

@@ -48,4 +48,6 @@ export const contentBlockSchema = z.discriminatedUnion("type", [
   // Bookmark and attachment blocks
   z.object({ id: z.string(), type: z.literal("bookmark"), url: z.string().max(2000), title: z.string().max(500), description: z.string().max(2000).optional(), favicon: z.string().max(2000).optional() }),
   z.object({ id: z.string(), type: z.literal("attachment"), url: z.string().max(2000), fileName: z.string().max(500), fileSize: z.number().optional(), mimeType: z.string().max(200).optional() }),
+  // Table block
+  z.object({ id: z.string(), type: z.literal("table"), headers: z.array(z.string().max(500)).max(20), rows: z.array(z.array(z.string().max(5000)).max(20)).max(200) }),
 ]);

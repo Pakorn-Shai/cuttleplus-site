@@ -81,7 +81,17 @@ export function mergeLearningBlocksIntoEditorBlocks(editorBlocks: unknown[], rea
 
 function editorText(block: EditorBlock): string {
   if (typeof block.content === "string") return block.content;
-  return (block.content ?? []).map((item) => item.text ?? "").join("");
+  if (Array.isArray(block.content)) return block.content.map((item) => item.text ?? "").join("");
+  return "";
+}
+
+// Recursively extract text from a block, walking nested children (e.g. tableCell → paragraph → text).
+function deepText(block: EditorBlock): string {
+  const parts: string[] = [];
+  const own = editorText(block);
+  if (own) parts.push(own);
+  for (const child of block.children ?? []) parts.push(deepText(child as EditorBlock));
+  return parts.join(" ").replace(/\s+/g, " ").trim();
 }
 
 export function editorBlocksToReaderBlocks(value: unknown[]): ContentBlock[] {
@@ -110,6 +120,29 @@ export function editorBlocksToReaderBlocks(value: unknown[]): ContentBlock[] {
     }
 
     flushList();
+
+    // Table block: flatten nested tableBlock/table → tableRow → tableCell
+    if (block.type === "tableBlock" || block.type === "table") {
+      const headers: string[] = [];
+      const rows: string[][] = [];
+      const walkRows = (node: EditorBlock) => {
+        for (const child of node.children ?? []) {
+          const row = child as EditorBlock;
+          if (row.type === "tableRow") {
+            const cells = (row.children ?? []).map((cell) => deepText(cell as EditorBlock));
+            if (headers.length === 0) headers.push(...cells);
+            else rows.push(cells);
+          } else {
+            walkRows(row);
+          }
+        }
+      };
+      walkRows(block);
+      if (headers.length > 0) {
+        result.push({ id, type: "table", headers, rows });
+      }
+      continue;
+    }
 
     // Rich block round-trip: callout, toggle, quote
     if (block.type === "calloutBlock") {
@@ -181,6 +214,11 @@ export function readerBlocksToEditorBlocks(blocks: ContentBlock[]): unknown[] {
     if (block.type === "quote") return [{ id: block.id, type: "quoteBlock", props: { attribution: block.attribution ?? "" }, content: [{ type: "text", text: block.text, styles: {} }], children: [] }];
     if (block.type === "image") return [{ id: block.id, type: "imageBlock", props: { src: block.src, alt: block.alt, caption: block.caption ?? "", width: block.width ?? 0, height: block.height ?? 0 }, children: [] }];
     if (block.type === "embed") return [{ id: block.id, type: "embedBlock", props: { url: block.url, embedType: block.embedType, caption: block.caption ?? "" }, children: [] }];
+    if (block.type === "table") {
+      const toCell = (text: string, r: number, c: number) => ({ id: `${block.id}-c${r}-${c}`, type: "tableCell", props: {}, children: [{ id: `${block.id}-p${r}-${c}`, type: "paragraph", content: [{ type: "text", text, styles: {} }], children: [] }] });
+      const toRow = (cells: string[], r: number) => ({ id: `${block.id}-r${r}`, type: "tableRow", props: {}, children: cells.map((cell, c) => toCell(cell, r, c)) });
+      return [{ id: block.id, type: "tableBlock", props: {}, children: [toRow(block.headers, 0), ...block.rows.map((row, i) => toRow(row, i + 1))] }];
+    }
     // Fallback for unknown block types: extract text-like content
     const fallbackText = "text" in block && typeof block.text === "string" ? block.text
       : "items" in block && Array.isArray(block.items) ? block.items.map((item: unknown) => typeof item === "string" ? item : (item as { step?: string })?.step ?? "").join(" ")

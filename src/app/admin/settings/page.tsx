@@ -34,7 +34,7 @@ export default async function SiteSettingsPage({ searchParams }: { searchParams:
       </div></section>
 
       <section className="admin-panel settings-panel"><div className="panel-head"><h3><Sparkles size={15} /> AI Settings</h3></div><div className="settings-form panel-body">
-        <label>AI Model (OpenRouter)<input name="aiModel" defaultValue={settings.aiModel} maxLength={200} placeholder="openai/gpt-4o-mini (empty = use env OPENROUTER_MODEL)" /></label>
+        <label>AI Model (Typhoon)<input name="aiModel" defaultValue={settings.aiModel} maxLength={200} placeholder="typhoon-v2.5-30b-a3b-instruct (empty = use env TYPHOON_MODEL)" /></label>
         <label>Max Tokens per Request<input name="aiMaxTokens" type="number" defaultValue={settings.aiMaxTokens} min={256} max={32768} /></label>
         <label>Request Timeout (ms)<input name="aiTimeoutMs" type="number" defaultValue={settings.aiTimeoutMs} min={5000} max={300000} /></label>
         <label>Monthly Budget (USD, 0 = unlimited)<input name="aiMonthlyBudgetUsd" type="number" step="0.01" defaultValue={settings.aiMonthlyBudgetUsd} min={0} max={10000} /></label>

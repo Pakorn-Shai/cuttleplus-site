@@ -33,13 +33,12 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     if (message === "CONTENT_NOT_FOUND") return NextResponse.json({ error: "Content not found" }, { status: 404 });
-    if (message === "OPENROUTER_NOT_CONFIGURED") return NextResponse.json({ error: "OpenRouter is not configured" }, { status: 503 });
-    if (message.startsWith("OPENROUTER_401") || message.startsWith("OPENROUTER_403")) return NextResponse.json({ error: "OpenRouter API key ไม่ถูกต้องหรือไม่มีสิทธิ์ใช้งาน", code: "provider_auth" }, { status: 502 });
-    if (message.startsWith("OPENROUTER_402")) return NextResponse.json({ error: "OpenRouter credits ไม่เพียงพอ", code: "provider_credits" }, { status: 502 });
-    if (message.startsWith("OPENROUTER_404")) return NextResponse.json({ error: "Model หรือ parameter ที่ตั้งไว้ไม่รองรับบน OpenRouter", code: "provider_model" }, { status: 502 });
-    if (message.startsWith("OPENROUTER_429")) return NextResponse.json({ error: "OpenRouter จำกัดจำนวนคำขอชั่วคราว กรุณาลองใหม่ภายหลัง", code: "provider_rate_limit" }, { status: 503 });
-    if (message === "OPENROUTER_EMPTY_RESPONSE" || message === "OPENROUTER_INVALID_JSON" || message === "OPENROUTER_INVALID_SCHEMA") return NextResponse.json({ error: "AI ตอบกลับมาไม่ครบตามรูปแบบ กรุณาลองใหม่", code: "provider_response" }, { status: 502 });
-    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) return NextResponse.json({ error: "OpenRouter ใช้เวลานานเกินค่า AI_TIMEOUT", code: "provider_timeout" }, { status: 504 });
+    if (message === "TYPHOON_NOT_CONFIGURED") return NextResponse.json({ error: "Typhoon is not configured" }, { status: 503 });
+    if (message.startsWith("TYPHOON_401") || message.startsWith("TYPHOON_403")) return NextResponse.json({ error: "Typhoon API key ไม่ถูกต้องหรือไม่มีสิทธิ์ใช้งาน", code: "provider_auth" }, { status: 502 });
+    if (message.startsWith("TYPHOON_404")) return NextResponse.json({ error: "Model หรือ parameter ที่ตั้งไว้ไม่รองรับบน Typhoon", code: "provider_model" }, { status: 502 });
+    if (message.startsWith("TYPHOON_429")) return NextResponse.json({ error: "Typhoon จำกัดจำนวนคำขอชั่วคราว กรุณาลองใหม่ภายหลัง", code: "provider_rate_limit" }, { status: 503 });
+    if (message === "TYPHOON_EMPTY_RESPONSE" || message === "TYPHOON_INVALID_JSON" || message === "TYPHOON_INVALID_SCHEMA") return NextResponse.json({ error: "AI ตอบกลับมาไม่ครบตามรูปแบบ กรุณาลองใหม่", code: "provider_response" }, { status: 502 });
+    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) return NextResponse.json({ error: "Typhoon ใช้เวลานานเกินค่า TYPHOON_TIMEOUT", code: "provider_timeout" }, { status: 504 });
     console.error("Unable to generate AI suggestion", error);
     return NextResponse.json({ error: "สร้าง AI suggestion ไม่สำเร็จ กรุณาตรวจงานล่าสุด", code: "provider_unknown" }, { status: 502 });
   }

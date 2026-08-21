@@ -1,7 +1,8 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
-import { getOpenRouterModel, requestAISuggestion } from "./openrouter";
+import { getTyphoonModel } from "./typhoon";
+import { requestAISuggestion } from "./openrouter";
 import { parseStoredDocument } from "@/core/content/document";
 import { contentSnapshotHash } from "./content-hash";
 import { getTemplateVersion } from "./prompt-templates";
@@ -127,12 +128,12 @@ export async function enqueueReadabilityJob(contentId: string): Promise<string> 
   });
   if (duplicate) return duplicate.jobId;
 
-  const model = getOpenRouterModel();
+  const model = getTyphoonModel();
   const job = await prisma.aIJob.create({
     data: {
       contentId,
       jobType: "READABILITY",
-      provider: "openrouter",
+      provider: "typhoon",
       model,
       promptVersion: getTemplateVersion("readability"),
       inputHash,

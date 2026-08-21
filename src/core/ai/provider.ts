@@ -66,7 +66,7 @@ export function registerProvider(name: string, factory: () => AIProvider) {
 }
 
 export function getProvider(name?: string): AIProvider {
-  const key = name ?? "openrouter";
+  const key = name ?? "typhoon";
   const factory = providers.get(key);
   if (!factory) throw new Error(`AI_PROVIDER_NOT_FOUND:${key}`);
   return factory();
@@ -74,46 +74,5 @@ export function getProvider(name?: string): AIProvider {
 
 /** Name of the configured primary provider (used for job bookkeeping). */
 export function getPrimaryProviderName(): string {
-  return process.env.AI_PROVIDER ?? "openrouter";
-}
-
-// ── Fallback chain ──────────────────────────────────────────────────
-
-export function getProviderChain(): AIProvider[] {
-  const primary = process.env.AI_PROVIDER ?? "openrouter";
-  const fallback = process.env.AI_FALLBACK_PROVIDER;
-  const chain: AIProvider[] = [];
-  try {
-    chain.push(getProvider(primary));
-  } catch {
-    // Primary not registered — will try fallback
-  }
-  if (fallback && fallback !== primary) {
-    try {
-      chain.push(getProvider(fallback));
-    } catch {
-      // Fallback not registered
-    }
-  }
-  if (chain.length === 0) throw new Error("AI_NO_PROVIDER_AVAILABLE");
-  return chain;
-}
-
-// ── Retry helper ────────────────────────────────────────────────────
-
-export async function withFallback<T>(
-  fn: (provider: AIProvider) => Promise<T>,
-  chain?: AIProvider[],
-): Promise<{ result: T; provider: string }> {
-  const providers = chain ?? getProviderChain();
-  let lastError: unknown;
-  for (const provider of providers) {
-    try {
-      const result = await fn(provider);
-      return { result, provider: provider.name };
-    } catch (error) {
-      lastError = error;
-    }
-  }
-  throw lastError;
+  return "typhoon";
 }
